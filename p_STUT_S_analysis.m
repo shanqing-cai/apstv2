@@ -14,6 +14,7 @@ IOA_WIN = 0.5;
 fontSize = 12;
 
 stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
+dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
 
 %% Loading data
 % dataSet_fn = 'e:\speechres\apstv2\mcode\p_STUT_S_analysis_ds.mat';
@@ -97,9 +98,30 @@ end
 % end
 
 %% Print subject demographic stats
-[ages.PFS, genders.PFS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
-[ages.PWS, genders.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PFS);
+[ages.PFS, genders.PFS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PFS, ...
+                                                 '--dataBookFN_AS', dataBookFN_AS);
+[ages.PWS, genders.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
 
+fprintf(1, '--- Demographic summary ---\n');
+fprintf(1, 'N(PWS) = %d; N(PFS) = %d\n', ...
+        numel(ds.subjIDs_PWS), numel(ds.subjIDs_PFS));
+fprintf(1, '-- Age: --\n');
+fprintf(1, '\tPWS: mean = %.2f, SD = %.2f\n', ...
+        mean(ages.PWS), std(ages.PWS));
+fprintf(1, '\tPFS: mean = %.2f, SD = %.2f\n', ...
+        mean(ages.PFS), std(ages.PFS));
+[age_h, age_p] = ttest2(ages.PWS, ages.PFS);
+fprintf(1, 'ttest2: p = %f\n', age_p);
+
+fprintf(1, '-- Gender: --\n');
+fprintf(1, '\tPWS: %dF%dM\n', ...
+        numel(find(genders.PWS == 0)), numel(find(genders.PWS == 1)));
+fprintf(1, '\tPFS: %dF%dM\n', ...
+        numel(find(genders.PFS == 0)), numel(find(genders.PFS == 1)));
+gender_p = chi2test([numel(find(genders.PWS == 0)), numel(find(genders.PWS == 1)); ...
+              numel(find(genders.PFS == 0)), numel(find(genders.PFS == 1))]);
+fprintf(1, 'ttest2: p = %f\n\n', gender_p);
+    
 %% Print stats about discard:
 groups = {'PWS', 'PFS'};
 for i1 = 1 : numel(groups)
