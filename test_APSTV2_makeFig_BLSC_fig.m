@@ -10,7 +10,7 @@ namStyle='accelDecel';
 traceColor=[1,1,1];
 % traceColor=[0,0,0];
 % traceColor_pert='c';
-traceColor_pert='y';
+traceColor_pert='m';
 traceWidth=3;
 axesColor='k';
 pointerColor='k';
@@ -21,7 +21,7 @@ timeBarColor=[0, 0, 0];
 textColor= [1, 1, 1];
 focusIntervalLineClr = [1, 0, 1];
 
-colors.none='k';
+colors.none=[1, 1, 1];
 colors.accel=[1,0.5,0];
 colors.decel=[0,0.5,0];
 colors.down='b';
@@ -266,7 +266,7 @@ for i1 = 1 : 5
         legend_bottom=2.02;
         legend_width=0.15;
         legend_height=0.45;
-        rectangle('Position',[legend_left,legend_bottom,legend_width,legend_height],'EdgeColor','k','FaceColor',[0.5,0.5,0.5])
+        rectangle('Position',[legend_left,legend_bottom,legend_width,legend_height],'EdgeColor','k','FaceColor',[0.25,0.25,0.25])
         plot([legend_left+0.01,legend_left+0.05],[2.34,2.34],'--','LineWidth',traceWidth,'Color',traceColor);
         plot([legend_left+0.01,legend_left+0.05],[2.12,2.12],'--','LineWidth',traceWidth,'Color',traceColor_pert);
         text(legend_left+0.055,2.35,'Mic. input','Color',traceColor,'FontSize',(fontSize-6)*scaling);
