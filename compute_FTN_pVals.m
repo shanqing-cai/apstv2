@@ -85,6 +85,8 @@ for i1 = 1 : numel(perts)
             n_PFS = size(t_mat.PFS, 2);
             t_mat_tot = [t_mat.PWS, t_mat.PFS];
             t_mat_tot = t_mat_tot(n0 : n1, :);
+            
+            nc = print_progress_bar(0, nPerm, sprintf('Performing permutation test on [%s]', pert));
             for j1 = 1 : nPerm
                 t_mat_perm = t_mat_tot(:, randperm(n_PWS + n_PFS));
                 
@@ -110,11 +112,9 @@ for i1 = 1 : numel(perts)
                     end
                 end
                 
-                if mod(j1, 10) == 0
-                    if j1 ~= 10
-                        for k1 = 1 : nc; fprintf(1, '\b'); end
-                    end
-                    nc = print_progress_bar(j1, nPerm, sprintf('Performing permutation test on [%s]', pert));
+                if mod(j1, round(nPerm / 10)) == 0
+                    for k1 = 1 : nc; fprintf(1, '\b'); end 
+                    print_progress_bar(j1, nPerm, sprintf('Performing permutation test on [%s]', pert));
                 end
                 
                 
