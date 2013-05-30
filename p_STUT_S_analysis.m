@@ -39,15 +39,20 @@ if bReload == 1
                                       'avgChgTrajF2_IOA_contrast', 'avgChgTrajF2_FTN_contrast', ...
                                       'nTotTrials', 'nDscd_all', 'nDscd_prodErr', ...
                                       'subjIDs'});
-    ds.F2Pert_upDown_PFS = [];
+    ds.F2Pert_upDown_PFS = [];    
+    ds.F2Pert_up_PFS = [];
+    ds.F2Pert_down_PFS = [];
     for i1 = 1 : numel(ds.subjIDs_PFS)
         if isequal(ds.subjIDs_PFS{i1}(1 : 5), 'AS_PS') || isequal(ds.subjIDs_PFS{i1}(1 : 6), 'APSTV_')
             expDir = fullfile('E:\DATA\APSTV', ds.subjIDs_PFS{i1});
         else
             expDir = fullfile('E:\STUT_DATA\', ds.subjIDs_PFS{i1}(1 : end - 2), 'APSTV2_STUT_S');
         end
+        
         s_pertStats = APSTV2_stats(expDir, 'main', 'rep1', 'main', 'rep20');
         ds.F2Pert_upDown_PFS(i1) = nanmean(s_pertStats.f2minChange.up) - nanmean(s_pertStats.f2minChange.down);
+        ds.F2Pert_up_PFS(i1) = nanmean(s_pertStats.f2minChange.up);
+        ds.F2Pert_down_PFS(i1) = nanmean(s_pertStats.f2minChange.down);
         ds.F2Pert_dur_PFS(i1) = nanmean([s_pertStats.dur.up, s_pertStats.dur.down]);
         ds.F2Pert_uTime_PFS(i1) = nanmean([s_pertStats.uTime.up, s_pertStats.uTime.down]);
         close all hidden;
@@ -68,15 +73,21 @@ if bReload == 1
                                       'avgChgTrajF2_IOA_contrast', 'avgChgTrajF2_FTN_contrast', ...
                                       'nTotTrials', 'nDscd_all', 'nDscd_prodErr', ...
                                       'subjIDs'});
+                                  
     ds.F2Pert_upDown_PWS = [];
+    ds.F2Pert_up_PWS = [];
+    ds.F2Pert_down_PWS = [];
     for i1 = 1 : numel(ds.subjIDs_PWS)
         if isequal(ds.subjIDs_PWS{i1}(1 : 5), 'AS_PS') || isequal(ds.subjIDs_PWS{i1}(1 : 6), 'APSTV_')
             expDir = fullfile('E:\DATA\APSTV', ds.subjIDs_PWS{i1});
         else
             expDir = fullfile('E:\STUT_DATA\', ds.subjIDs_PWS{i1}(1 : end - 2), 'APSTV2_STUT_S');
         end
+        
         s_pertStats = APSTV2_stats(expDir, 'main', 'rep1', 'main', 'rep20');
         ds.F2Pert_upDown_PWS(i1) = nanmean(s_pertStats.f2minChange.up) - nanmean(s_pertStats.f2minChange.down);
+        ds.F2Pert_up_PWS(i1) = nanmean(s_pertStats.f2minChange.up);
+        ds.F2Pert_down_PWS(i1) = nanmean(s_pertStats.f2minChange.down);
         ds.F2Pert_dur_PWS(i1) = nanmean([s_pertStats.dur.up, s_pertStats.dur.down]);
         ds.F2Pert_uTime_PWS(i1) = nanmean([s_pertStats.uTime.up, s_pertStats.uTime.down]);
         close all hidden;
@@ -100,7 +111,7 @@ end
 %% Print subject demographic stats
 [ages.PFS, genders.PFS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PFS, ...
                                                  '--dataBookFN_AS', dataBookFN_AS);
-[ages.PWS, genders.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
+[ages.PWS, genders.PWS, SSI4.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
 
 fprintf(1, '--- Demographic summary ---\n');
 fprintf(1, 'N(PWS) = %d; N(PFS) = %d\n', ...
@@ -121,6 +132,12 @@ fprintf(1, '\tPFS: %dF%dM\n', ...
 gender_p = chi2test([numel(find(genders.PWS == 0)), numel(find(genders.PWS == 1)); ...
               numel(find(genders.PFS == 0)), numel(find(genders.PFS == 1))]);
 fprintf(1, 'ttest2: p = %f\n\n', gender_p);
+
+fprintf(1, '-- SSI-4 scores (PWS) --\n');
+fprintf(1, '\tMedian = %.2f; IQR = %.2f; mean = %.2f; SD = %.2f; range = %.2f - %.2f\n\n', ...
+        median(SSI4.PWS), iqr(SSI4.PWS), mean(SSI4.PWS), std(SSI4.PWS), ...
+        min(SSI4.PWS), max(SSI4.PWS));
+
     
 %% Print stats about discard:
 groups = {'PWS', 'PFS'};
@@ -136,9 +153,83 @@ end
 
 
 %% Perturbation stats: F2 perturbation
+fprintf(1, '--- Pert stats: Up-Down ---\n');
 F2Pert_upDown.PFS = ds.F2Pert_upDown_PFS;
 F2Pert_upDown.PWS = ds.F2Pert_upDown_PWS;
 metaPlot_2grp(F2Pert_upDown, 'PFS', 'PWS', 'F2 perturbation: Up - Down', 'F2 perturbation: Up - Down (Hz)', colors, 'zeroLine');
+
+fprintf(1, '--- Pert stats: Up ---\n');
+F2Pert_up.PFS = ds.F2Pert_up_PFS;
+F2Pert_up.PWS = ds.F2Pert_up_PWS;
+metaPlot_2grp(F2Pert_up, 'PFS', 'PWS', 'F2 perturbation: Up', 'F2 perturbation: Up (Hz)', colors, 'zeroLine');
+
+fprintf(1, '--- Pert stats: Up ---\n');
+F2Pert_down.PFS = ds.F2Pert_down_PFS;
+F2Pert_down.PWS = ds.F2Pert_down_PWS;
+metaPlot_2grp(F2Pert_down, 'PFS', 'PWS', 'F2 perturbation: Down', 'F2 perturbation: Down (Hz)', colors, 'zeroLine');
+
+%% Results: F2 compensation trajectories: FTN (full time-normalized)
+XLim = [0, 1500];
+figure('color', 'w');
+for i1 = 1 : 2    
+    if i1 == 1; fld = 'up'; else; fld = 'down'; end
+    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors);
+end
+
+[p_FTN.down, p_FTN.up, p_FTN.contrast, FDR_thresh.down, FDR_thresh.up, FDR_thresh.contrast] = ...
+        compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05);
+
+
+for i1 = 1 : 2    
+    if i1 == 1; fld = 'up'; else; fld = 'down'; end
+    figure('Color', 'white', 'Position', [100, 100, 1200, 400], ...
+           'Name', ['FTN F2 change trajectorys: ', fld]);
+    set(gca, 'FontSize', 20);
+    
+    metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors);
+    taxis0 = linspace(0, 1500, length(p_FTN.(fld)));
+    
+    set(gca, 'YLim', [-50, 50]);
+    xs = get(gca, 'XLim'); ys = get(gca, 'YLim'); 
+    
+    label_dx = 25;
+    label_dy = 0.06;
+    
+    plot([0, 0], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(0 - label_dx, ys(1) - label_dy * range(ys), '[i]', 'FontSize', 20);
+    
+    plot([250, 250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(250 - label_dx, ys(1) - label_dy * range(ys), '[u]_1', 'FontSize', 20);
+    
+    plot([500, 500], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(500 - label_dx, ys(1) - label_dy * range(ys), '[j]_1', 'FontSize', 20);
+    
+    plot([750, 750], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(750 - label_dx, ys(1) - label_dy * range(ys), '[u]_2', 'FontSize', 20);
+    
+    plot([1000, 1000], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(1000 - label_dx, ys(1) - label_dy * range(ys), '[j]_2', 'FontSize', 20);
+    
+    plot([1250, 1250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
+    text(1250 - label_dx, ys(1) - label_dy * range(ys), '[u]_3', 'FontSize', 20);
+    text(1500 - label_dx, ys(1) - label_dy * range(ys), '[j]_3', 'FontSize', 20);
+    
+%     set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', ...
+%         {'[i]', '[u]_1', '[j]_1', '[u]_2', '[j]_2', '[u]_3', '[j]_3'});
+    set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', {});
+    xlabel('Piecewise normalized time'); ylabel('F2 change (Hz)');
+    
+    draw_xy_axes
+    draw_sgn_bar(taxis0, p_FTN.(fld), 0.05, FDR_thresh.(fld), ...
+        ys(1) + 0.20 * range(ys), 0.02 * range(ys), 'k', [0.5, 0.5, 0.5], 'k');
+end
+
+% ds.chgTrajF2_FTN_PFS.up = ds.chgTrajF2_FTN_PFS.contrast;
+% ds.chgTrajF2_FTN_PWS.up = ds.chgTrajF2_FTN_PWS.contrast;
+% ds.chgTrajF2_FTN_PFS.down = ds.chgTrajF2_FTN_PFS.contrast;
+% ds.chgTrajF2_FTN_PWS.down = ds.chgTrajF2_FTN_PWS.contrast;
+% [p_FTN_con.down, p_FTN_con.up, FDR_con_thresh.down, FDR_con_thresh.up] = ...
+%         compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05);
 
 %% Temporal parameters of the Up and Down perturbations 
 F2Pert_dur.PFS = ds.F2Pert_dur_PFS;
@@ -282,68 +373,7 @@ xs = get(gca, 'XLim'); ys = get(gca, 'YLim');
 draw_sgn_bar(taxis0, p_IOA_con.(fld), 0.05, FDR_con_thresh.(fld), ...
         ys(1) + 0.05 * range(ys), 0.02 * range(ys), 'k', [0.5, 0.5, 0.5], 'k');
 
-%% Results: F2 compensation trajectories: FTN (full time-normalized)
-XLim = [0, 1500];
-figure('color', 'w');
-for i1 = 1 : 2    
-    if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors);
-end
 
-[p_FTN.down, p_FTN.up, p_FTN.contrast, FDR_thresh.down, FDR_thresh.up, FDR_thresh.contrast] = ...
-        compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05);
-
-
-for i1 = 1 : 2    
-    if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    figure('Color', 'white', 'Position', [100, 100, 1200, 400], ...
-           'Name', ['FTN F2 change trajectorys: ', fld]);
-    set(gca, 'FontSize', 20);
-    
-    metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors);
-    taxis0 = linspace(0, 1500, length(p_FTN.(fld)));
-    
-    set(gca, 'YLim', [-50, 50]);
-    xs = get(gca, 'XLim'); ys = get(gca, 'YLim'); 
-    
-    label_dx = 25;
-    label_dy = 0.06;
-    
-    plot([0, 0], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(0 - label_dx, ys(1) - label_dy * range(ys), '[i]', 'FontSize', 20);
-    
-    plot([250, 250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(250 - label_dx, ys(1) - label_dy * range(ys), '[u]_1', 'FontSize', 20);
-    
-    plot([500, 500], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(500 - label_dx, ys(1) - label_dy * range(ys), '[j]_1', 'FontSize', 20);
-    
-    plot([750, 750], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(750 - label_dx, ys(1) - label_dy * range(ys), '[u]_2', 'FontSize', 20);
-    
-    plot([1000, 1000], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(1000 - label_dx, ys(1) - label_dy * range(ys), '[j]_2', 'FontSize', 20);
-    
-    plot([1250, 1250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(1250 - label_dx, ys(1) - label_dy * range(ys), '[u]_3', 'FontSize', 20);
-    text(1500 - label_dx, ys(1) - label_dy * range(ys), '[j]_3', 'FontSize', 20);
-    
-%     set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', ...
-%         {'[i]', '[u]_1', '[j]_1', '[u]_2', '[j]_2', '[u]_3', '[j]_3'});
-    set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', {});
-    xlabel('Piecewise normalized time'); ylabel('F2 change (Hz)');
-    
-    draw_xy_axes
-    draw_sgn_bar(taxis0, p_FTN.(fld), 0.05, FDR_thresh.(fld), ...
-        ys(1) + 0.20 * range(ys), 0.02 * range(ys), 'k', [0.5, 0.5, 0.5], 'k');
-end
-
-% ds.chgTrajF2_FTN_PFS.up = ds.chgTrajF2_FTN_PFS.contrast;
-% ds.chgTrajF2_FTN_PWS.up = ds.chgTrajF2_FTN_PWS.contrast;
-% ds.chgTrajF2_FTN_PFS.down = ds.chgTrajF2_FTN_PFS.contrast;
-% ds.chgTrajF2_FTN_PWS.down = ds.chgTrajF2_FTN_PWS.contrast;
-% [p_FTN_con.down, p_FTN_con.up, FDR_con_thresh.down, FDR_con_thresh.up] = ...
-%         compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05);
 
 %% Between-group FTN comparison
 figure('Color', 'white', 'Position', [100, 100, 1600, 700], ...

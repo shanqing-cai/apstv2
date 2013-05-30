@@ -58,9 +58,9 @@ for i1 = 1 : numel(subjIDs)
     end
 
     if ~isempty(strfind(t_subjID, 'PWS_'))
-        if idx < size(N, 1)
-            SSI4(i1) = N(idx, 15);
-        end
+%         if idx < size(N, 1)
+            SSI4(i1) = N(idx - 2, 17); % ## WARNING: Ad hoc ##
+%         end
     end
     
     
