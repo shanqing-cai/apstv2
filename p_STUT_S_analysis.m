@@ -1,5 +1,5 @@
 function p_STUT_S_analysis(varargin)
-%%
+%% CONFIG
 colors.PFS = [0, 0, 0];
 colors.PWS = [1, 0, 0];
 
@@ -12,6 +12,8 @@ FRAME_DUR = 16/12e3;
 IOA_WIN = 0.5;
 
 fontSize = 12;
+
+stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
 
 %% Loading data
 % dataSet_fn = 'e:\speechres\apstv2\mcode\p_STUT_S_analysis_ds.mat';
@@ -95,7 +97,8 @@ end
 % end
 
 %% Print subject demographic stats
-
+[ages.PFS, genders.PFS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
+[ages.PWS, genders.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PFS);
 
 %% Print stats about discard:
 groups = {'PWS', 'PFS'};
