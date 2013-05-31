@@ -16,9 +16,11 @@ fontSize = 12;
 if isequal(getHostName, 'CNS-PC34')
     stutDataBookFN = 'C:\Users\scai\Dropbox\STUT\SubjectDataBase-1.xls';
     dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+    dataBookFN_APSTV2 = 'E:\DATA\APSTV2\DataBook-APSTV2.xls';
 else
     stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
     dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+    dataBookFN_APSTV2 = 'E:\DATA\APSTV2\DataBook-APSTV2.xls';
 end
 
 
@@ -98,7 +100,8 @@ end
 
 %% Print subject demographic stats
 [ages.PFS, genders.PFS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PFS, ...
-                                                 '--dataBookFN_AS', dataBookFN_AS);
+                                                 '--dataBookFN_AS', dataBookFN_AS, ...
+                                                 '--dataBookFN_APSTV2', dataBookFN_APSTV2);
 [ages.PWS, genders.PWS, SSI4.PWS] = get_STUT_subjDemogInfo(stutDataBookFN, ds.subjIDs_PWS);
 
 fprintf(1, '--- Demographic summary ---\n');

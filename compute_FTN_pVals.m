@@ -174,7 +174,7 @@ for i1 = 1 : numel(perts)
 
         fprintf('Within-group permutation test on [WG - %s - %s]:\n', pert, grp);        
         for i3 = 1 : numel(wgSigSigns)
-            corrp_wg.(pert).(grp)(i3) = numel(find(wg_maxSigSegLens_perm > wgSigSegLens(i3))) / double(nPerm);
+            corrp_wg.(pert).(grp)(i3) = numel(find(wg_maxSigSegLens_perm >= wgSigSegLens(i3))) / double(nPerm);
             fprintf('\tLength = %d; p = %f;\n', wgSigSegLens(i3), corrp_wg.(pert).(grp)(i3));
         end
         fprintf(1, '\n');
@@ -250,11 +250,11 @@ for i1 = 1 : numel(perts)
                 load(permMatFN);
             end
             
-            ps_perm.(pert) = numel(find(sigSegLens_perm > sigSegLens)) / double(nPerm);
+            ps_perm.(pert) = numel(find(sigSegLens_perm >= sigSegLens)) / double(nPerm);
             fprintf('Permutation test on [BG - %s], p = %f\n\n', pert, ps_perm.(pert));
             
         else
-            fprintf(1, 'Pert [BGC - %s]: No significant intervals under tpwPThresh=%f. Moving on.\n', ...
+            fprintf(1, 'Pert [BGC - %s]: No significant intervals under tpwPThresh=%f. Moving on.\n\n', ...
                     pert, tpwPThresh);
         end
         
