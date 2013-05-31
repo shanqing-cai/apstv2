@@ -13,8 +13,14 @@ IOA_WIN = 0.5;
 
 fontSize = 12;
 
-stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
-dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+if isequal(getHostName, 'CNS-PC34')
+    stutDataBookFN = 'C:\Users\scai\Dropbox\STUT\SubjectDataBase-1.xls';
+    dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+else
+    stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
+    dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+end
+
 
 %% Loading data
 % dataSet_fn = 'e:\speechres\apstv2\mcode\p_STUT_S_analysis_ds.mat';
