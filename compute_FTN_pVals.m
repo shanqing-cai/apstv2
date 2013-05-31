@@ -170,14 +170,15 @@ for i1 = 1 : numel(perts)
                         mfilename, pert, grp, permMatFN);
                 load(permMatFN);
             end
+            
+            fprintf('Within-group permutation test on [WG - %s - %s]:\n', pert, grp);        
+            for i3 = 1 : numel(wgSigSigns)
+                corrp_wg.(pert).(grp)(i3) = numel(find(wg_maxSigSegLens_perm >= wgSigSegLens(i3))) / double(nPerm);
+                fprintf('\tLength = %d; p = %f;\n', wgSigSegLens(i3), corrp_wg.(pert).(grp)(i3));
+            end
+            fprintf(1, '\n');
         end
 
-        fprintf('Within-group permutation test on [WG - %s - %s]:\n', pert, grp);        
-        for i3 = 1 : numel(wgSigSigns)
-            corrp_wg.(pert).(grp)(i3) = numel(find(wg_maxSigSegLens_perm >= wgSigSegLens(i3))) / double(nPerm);
-            fprintf('\tLength = %d; p = %f;\n', wgSigSegLens(i3), corrp_wg.(pert).(grp)(i3));
-        end
-        fprintf(1, '\n');
     end
     
     % ---- Between-group comparison ---- %
