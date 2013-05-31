@@ -178,7 +178,8 @@ end
 
 [p_FTN.down, p_FTN.up, p_FTN.contrast, FDR_thresh.down, FDR_thresh.up, FDR_thresh.contrast] = ...
         compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05, ...
-        '--perm', 0.05, [250, 499], 100);
+        '--perm', 0.05, [250, 499], 100, ...
+        '--permfile', [mfilename, '_%s_%d.mat']);
 
 for i1 = 1 : 2    
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
