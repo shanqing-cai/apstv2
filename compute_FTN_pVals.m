@@ -251,7 +251,7 @@ for i1 = 1 : numel(perts)
             end
             
             ps_perm.(pert) = numel(find(sigSegLens_perm > sigSegLens)) / double(nPerm);
-            fprintf('Permutation test on [%s], p = %f\n', pert, ps_perm.(pert));
+            fprintf('Permutation test on [BG - %s], p = %f\n\n', pert, ps_perm.(pert));
             
         else
             fprintf(1, 'Pert [BGC - %s]: No significant intervals under tpwPThresh=%f. Moving on.\n', ...
