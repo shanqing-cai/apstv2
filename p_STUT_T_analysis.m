@@ -45,6 +45,8 @@ if bReload == 1
                                       'nTotTrials', 'nDscd_all', 'nDscd_prodErr', ...
                                       'subjIDs'});
     ds.tPert_decelAccel_PFS = [];
+    ds.uTimeShift_decel_PFS = nan(1, numel(ds.subjIDs_PFS));
+    ds.uTimeShift_accel_PFS = nan(1, numel(ds.subjIDs_PFS));
     for i1 = 1 : numel(ds.subjIDs_PFS)
         if isequal(ds.subjIDs_PFS{i1}(1 : 8), 'APSTV2T_')
             expDir = fullfile('E:\DATA\APSTV2', ds.subjIDs_PFS{i1});
@@ -52,9 +54,13 @@ if bReload == 1
             expDir = fullfile('E:\STUT_DATA\', ds.subjIDs_PFS{i1}(1 : end - 2), 'APSTV2_STUT_T');
         end
         s_pertStats = APSTV2_stats(expDir, 'main', 'rep1', 'main', 'rep20');
-        ds.tPert_decelAccel_PFS(i1) = nanmean(s_pertStats.uTimeShift.decel) - nanmean(s_pertStats.uTimeShift.accel);
+        ds.tPert_decelAccel_PFS(i1) = nanmean(s_pertStats.uTimeShift.decel) - nanmean(s_pertStats.uTimeShift.accel);        
         ds.F2Pert_dur_PFS(i1) = nanmean([s_pertStats.dur.accel, s_pertStats.dur.decel]);
         ds.F2Pert_uTime_PFS(i1) = nanmean([s_pertStats.uTime.accel, s_pertStats.uTime.decel]);
+        
+        ds.uTimeShift_decel_PFS(i1) = nanmean(s_pertStats.uTimeShift.decel);
+        ds.uTimeShift_accel_PFS(i1) = nanmean(s_pertStats.uTimeShift.accel);
+        
         close all hidden;
     end
     
@@ -75,6 +81,8 @@ if bReload == 1
                                       'nTotTrials', 'nDscd_all', 'nDscd_prodErr', ...
                                       'subjIDs'});
     ds.tPert_decelAccel_PWS = [];
+    ds.uTimeShift_decel_PWS = nan(1, numel(ds.subjIDs_PWS));
+    ds.uTimeShift_accel_PWS = nan(1, numel(ds.subjIDs_PWS));
     for i1 = 1 : numel(ds.subjIDs_PWS)
         if isequal(ds.subjIDs_PWS{i1}(1 : 8), 'APSTV2T_')
             expDir = fullfile('E:\DATA\APSTV2', ds.subjIDs_PWS{i1});
@@ -85,6 +93,10 @@ if bReload == 1
         ds.tPert_decelAccel_PWS(i1) = nanmean(s_pertStats.uTimeShift.decel) - nanmean(s_pertStats.uTimeShift.accel);
         ds.F2Pert_dur_PWS(i1) = nanmean([s_pertStats.dur.accel, s_pertStats.dur.decel]);
         ds.F2Pert_uTime_PWS(i1) = nanmean([s_pertStats.uTime.accel, s_pertStats.uTime.decel]);
+        
+        ds.uTimeShift_decel_PWS(i1) = nanmean(s_pertStats.uTimeShift.decel);
+        ds.uTimeShift_accel_PWS(i1) = nanmean(s_pertStats.uTimeShift.accel);
+        
         close all hidden;
     end
     
@@ -361,6 +373,22 @@ chg_IY2Int.PWS = ds.IY2Int_PWS(:, 2:3) - repmat(ds.IY2Int_PWS(:, 1), 1, 2);
 chg_IU3Int.PWS = ds.IU3Int_PWS(:, 2:3) - repmat(ds.IU3Int_PWS(:, 1), 1, 2);
 chg_IY3Int.PWS = ds.IY3Int_PWS(:, 2:3) - repmat(ds.IY3Int_PWS(:, 1), 1, 2);
 
+% --- Mean ratio of compensation --- %
+ratio_compen_iuInt_PFS = mean(chg_IUInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
+ratio_compen_iuInt_PWS = mean(chg_IUInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
+
+fprintf(1, 'Ratio of compensation (IUInt)\n');
+fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iuInt_PFS);
+fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iuInt_PWS);
+
+ratio_compen_iyInt_PFS = mean(chg_IYInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
+ratio_compen_iyInt_PWS = mean(chg_IYInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
+
+fprintf(1, 'Ratio of compensation (IYInt)\n');
+fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iyInt_PFS);
+fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
+
+% --- tInt change comparisons between group, with permutation test --- %
 corrps = struct;
 [ps_1, ps_2, ps_12, ...
     FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
