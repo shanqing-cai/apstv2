@@ -124,7 +124,7 @@ if nPerm > 0
     end
     fprintf(1, '\n');
     
-    varargout{1} = corrps;        
+    varargout{1} = corrps;
 end
 
 return
