@@ -173,6 +173,24 @@ for i1 = 1 : numel(groups)
             1e2 * sum(ds.(['nDscd_prodErr_', (grp)])) / sum(ds.(['nTotTrials_', (grp)])));
 end
 
+%% Stats about speaking rate
+[~, p_bgt_IUInt] = ttest2(ds.IUInt_PFS(:, 1), ds.IUInt_PWS(:, 1));
+fprintf(1, '--- Speaking rate stats --- \n');
+fprintf(1, '-- IUInt (noPert) --\n');
+fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IUInt_PFS(:, 1)), 1e3 * std(ds.IUInt_PFS(:, 1)));
+fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IUInt_PWS(:, 1)), 1e3 * std(ds.IUInt_PWS(:, 1)));
+fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IUInt);
+
+[~, p_bgt_IYInt] = ttest2(ds.IYInt_PFS(:, 1), ds.IYInt_PWS(:, 1));
+fprintf(1, '--- Speaking rate stats --- \n');
+fprintf(1, '-- IYInt (noPert) --\n');
+fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IYInt_PFS(:, 1)), 1e3 * std(ds.IYInt_PFS(:, 1)));
+fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IYInt_PWS(:, 1)), 1e3 * std(ds.IYInt_PWS(:, 1)));
+fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IYInt);
 
 %% Perturbation stats: F2 perturbation
 fprintf(1, '--- Pert stats: Up-Down ---\n');
