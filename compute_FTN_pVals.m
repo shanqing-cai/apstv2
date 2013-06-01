@@ -1,6 +1,5 @@
 function [p_FTN_down, p_FTN_up, p_FTN_contrast, ...
-          wg_sigSegs, corrp_wg, ...
-          FDR_thresh_down, FDR_thresh_up, FDR_thresh_contrast] = ...
+          FDR_thresh_down, FDR_thresh_up, FDR_thresh_contrast, varargout] = ...
             compute_FTN_pVals(chgTrajF2_FTN_PFS, chgTrajF2_FTN_PWS, FDR, varargin)
 %% Optional input arguments
 % "--perm" (permutation test): [tpwPThresh, [n0, n1], nPerm]
@@ -11,6 +10,9 @@ function [p_FTN_down, p_FTN_up, p_FTN_contrast, ...
 %
 % "--permfile": permutation results file (.mat format)
 %       Used only with --perm
+%
+% Optional output
+%   wg_sigSegs, corrp_wg;
 
 %% Process optional input arguments
 if ~isempty(fsic(varargin, '--perm'))        
@@ -23,7 +25,7 @@ if ~isempty(fsic(varargin, '--perm'))
     assert(n1 > n0);
    
     nPerm = uint32(varargin{fsic(varargin, '--perm') + 3});
-    assert(nPerm > 0);
+    assert(nPerm >= 0);
     
     if ~isempty(fsic(varargin, '--permfile'))
         permMatWC = varargin{fsic(varargin, '--permfile') + 1};
@@ -68,6 +70,10 @@ corrp_wg = struct; % Within-group corrected p-values
 t_wg = struct; % Within-group t-values
 
 wg_sigSegs = struct;
+corrp_wg = struct;
+
+bg_sigSegs = struct;
+corrp_bg = struct;
 
 for i1 = 1 : numel(perts)
     pert = perts{i1};
@@ -90,6 +96,7 @@ for i1 = 1 : numel(perts)
     % ---- Comparisons (with zero baseline) within groups ---- %
     M = size(t_mat.PFS, 1);
     p_wg.(pert) = struct;
+    
     corrp_wg.(pert) = struct;
     wg_sigSegs.(pert) = struct;
     
@@ -177,6 +184,8 @@ for i1 = 1 : numel(perts)
                 fprintf('\tLength = %d; p = %f;\n', wgSigSegLens(i3), corrp_wg.(pert).(grp)(i3));
             end
             fprintf(1, '\n');
+            
+            
         end
 
     end
@@ -188,6 +197,8 @@ for i1 = 1 : numel(perts)
         t_FTN_seg = t_FTN.(pert)(n0 : n1);
         
         [idx_on, idx_off] = get_cont_stretches(p_FTN_seg < tpwPThresh);
+        bg_sigSegs.(pert) = [idx_on; idx_off];
+        corrp_bg.(pert) = NaN;
         
         permMatFN = sprintf(permMatWC, 'BCG', pert, nPerm);
         if ~isempty(idx_on)
@@ -217,6 +228,7 @@ for i1 = 1 : numel(perts)
                     end
 
                     [idx_on, idx_off] = get_cont_stretches(p_perm < tpwPThresh);
+                    
 
                     if ~isempty(idx_on)
                         t_sigSegLens = idx_off - idx_on + 1;
@@ -252,6 +264,7 @@ for i1 = 1 : numel(perts)
             end
             
             ps_perm.(pert) = numel(find(sigSegLens_perm >= sigSegLens)) / double(nPerm);
+            corrp_bg.(pert) = ps_perm.(pert);
             fprintf('Permutation test on [BG - %s], p = %f\n\n', pert, ps_perm.(pert));
             
         else
@@ -261,6 +274,8 @@ for i1 = 1 : numel(perts)
         
         
     end
+    
+    
 end
 
 p_FTN_down = p_FTN.(Fld1);
@@ -270,6 +285,15 @@ p_FTN_contrast = p_FTN.contrast;
 FDR_thresh_down = fdr(p_FTN.(Fld1), FDR);
 FDR_thresh_up = fdr(p_FTN.(Fld2), FDR);
 FDR_thresh_contrast = fdr(p_FTN.contrast, FDR);
+
+%% --- Furnish additional output (varargout) --- %%
+if ~isempty(fsic(varargin, '--perm'))
+    varargout{1} = wg_sigSegs;
+    varargout{2} = corrp_wg;
+    
+    varargout{3} = bg_sigSegs;
+    varargout{4} = corrp_bg;
+end
 
 
 return

@@ -1,12 +1,20 @@
 function p_STUT_S_analysis(varargin)
+%% Usage:
+%   p_STUT_S_analysis 
+%       Doesn't do permutation test
+%   p_STUT_S_analysis(nPerm) 
+%       Does permutation test
+
 %% CONFIG
 colors.PFS = [0, 0, 0];
 colors.PWS = [1, 0, 0];
+colors.grpContr = [0, 0, 1];
 
 colors.accel=[1,0.5,0];
 colors.decel=[0,0.5,0];
 colors.up=[1,0,0];
 colors.down=[0,0,1];
+
 FRAME_DUR = 16/12e3;
 
 IOA_WIN = 0.5;
@@ -19,6 +27,14 @@ if isequal(getHostName, 'CNS-PC34')
 else
     stutDataBookFN = 'C:\Users\systemxp\Documents\My Dropbox\STUT\SubjectDataBase-1.xls';
     dataBookFN_AS = 'E:\DATA\APSTV\Subjects-APSTV+SLAP+APAT.xls';
+end
+
+shadeWhitenFactor = 0.7; % 1.0 - most whitened
+
+%% Process input arguments
+nPerm = 0;
+if nargin == 1
+    nPerm = varargin{1};
 end
 
 
@@ -179,56 +195,216 @@ XLim = [0, 1500];
 figure('color', 'w');
 for i1 = 1 : 2    
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors);
+    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor);
 end
 
-[p_FTN.down, p_FTN.up, p_FTN.contrast, FDR_thresh.down, FDR_thresh.up, FDR_thresh.contrast] = ...
+permBeg = 250;
+permEnd = 499;
+[p_FTN.down, p_FTN.up, p_FTN.contrast, FDR_thresh.down, FDR_thresh.up, FDR_thresh.contrast, ...
+        wg_sigSegs, wg_corrp, bg_sigSegs, bg_corrp] = ...
         compute_FTN_pVals(ds.chgTrajF2_FTN_PFS, ds.chgTrajF2_FTN_PWS, 0.05, ...
-        '--perm', 0.05, [250, 499], 100, ...
-        '--permfile', [mfilename, '_%s_%d.mat']);
+        '--perm', 0.05, [250, 499], nPerm, ...
+        '--permfile', ['perm_files/', [mfilename, '_FTN_%s_%s_%d.mat']]);
 
-for i1 = 1 : 2    
-    if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    figure('Color', 'white', 'Position', [100, 100, 1200, 400], ...
+% --- Visualization configurations --- %
+ylims.up = [-40, 20];
+ylims.down = [-20, 40];
+ylims.contrast = [-35, 50];
+barHRatio = 0.05;
+
+yticks.up = [-20 : 10 : 20];
+yticks.down = [-5, 0 : 10 : 40];
+yticks.contrast = [-20 : 10 : 50];
+
+corrPThresh = 0.05;
+
+barLineW = 1.5;
+barEdgeClr = [0.5, 0.5, 0.5];
+
+pltFontSize = 20;
+
+trcLgdN = 50;
+trcLgdX0 = 0.55;
+trcLgdX1 = 0.60;
+trcLgdY.PFS = 0.28;
+trcLgdY.PWS = 0.22;
+trcLgdH = 0.02;
+
+lgdX = 0.7;
+lgdW = 0.25;
+lgdY = 0.175;
+lgdH = 0.12;
+
+% --- ~Visualization configurations --- %
+
+for i1 = 1 : 3
+    if i1 == 1
+        fld = 'up';
+    elseif i1 == 2
+        fld = 'down';
+    else
+        fld = 'contrast';
+    end
+    figure('Color', 'white', 'Position', [50, 100, 1350, 450], ...
            'Name', ['FTN F2 change trajectorys: ', fld]);
+    subplot('Position', [0.15, 0.15, 0.825, 0.825]);
     set(gca, 'FontSize', 20);
     
-    metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors);
+    if i1 == 1 || i1 == 2
+        metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor);
+    else
+        ds.avgChgTrajF2_FTN_contrast_PFS_aux = struct;
+        ds.avgChgTrajF2_FTN_contrast_PFS_aux.contrast = ds.avgChgTrajF2_FTN_contrast_PFS;
+        ds.avgChgTrajF2_FTN_contrast_PWS_aux = struct;
+        ds.avgChgTrajF2_FTN_contrast_PWS_aux.contrast = ds.avgChgTrajF2_FTN_contrast_PWS;
+        
+        metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS_aux, ds.avgChgTrajF2_FTN_contrast_PWS_aux, fld, XLim, 1, colors, shadeWhitenFactor);
+    end
+    
+    
     taxis0 = linspace(0, 1500, length(p_FTN.(fld)));
     
-    set(gca, 'YLim', [-50, 50]);
+%     set(gca, 'YLim', [-50, 50]);
+    set(gca, 'YLim', ylims.(fld), 'YTick', yticks.(fld));    
     xs = get(gca, 'XLim'); ys = get(gca, 'YLim'); 
+    
+    % --- Draw significance bars --- %
+    if nPerm > 0
+        for k1 = 1 : 3
+            rect_y = ys(1) + barHRatio * (3 - k1) * range(ys);
+            
+            rectangle('Position', [0, rect_y, range(xs), barHRatio * range(ys)], ....
+                          'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+            
+            if k1 <= 2
+                grp = groups{3 - k1};
+                lbl_txt = grp;
+                f_clr = colors.(grp);
+            
+                for k2 = 1 : size(wg_sigSegs.(fld).(grp), 2)
+                    if wg_corrp.(fld).(grp)(k2) < corrPThresh
+                        t_clr = colors.(grp);                        
+                    else
+                        t_clr = 1 - 0.5 * (1 - colors.(grp));
+                    end                    
+
+                    rectangle('Position', [wg_sigSegs.(fld).(grp)(1, k2), rect_y, ...
+                                           wg_sigSegs.(fld).(grp)(2, k2) - wg_sigSegs.(fld).(grp)(1, k2), barHRatio * range(ys)], ....
+                              'FaceColor', t_clr, 'EdgeColor', barEdgeClr);
+                end
+            else
+                grp = 'contrast';
+                lbl_txt = 'PWS vs. PFS';
+                f_clr = colors.grpContr;
+                
+                for k2 = 1 : size(bg_sigSegs.(fld), 2)
+                    if bg_corrp.(fld)(k2) < corrPThresh
+                        t_clr = colors.grpContr;
+                    else
+                        t_clr = 1 - 0.5 * (1 - colors.grpContr);
+                    end
+
+                    rectangle('Position', [permBeg - 1 + bg_sigSegs.(fld)(1, k2), rect_y, ...
+                                           bg_sigSegs.(fld)(2, k2) - bg_sigSegs.(fld)(1, k2), barHRatio * range(ys)], ....
+                              'FaceColor', t_clr, 'EdgeColor', barEdgeClr);
+                end
+            end
+            
+            text(xs(1) - (0.03 + 0.055 * (k1 == 3)) * range(xs), rect_y + 0.02 * range(ys), ...
+                 lbl_txt, ...
+                 'Color', f_clr, 'FontSize', pltFontSize * 0.55, 'FontWeight', 'Bold');
+        end
+        
+        
+    end
     
     label_dx = 25;
     label_dy = 0.06;
     
     plot([0, 0], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(0 - label_dx, ys(1) - label_dy * range(ys), '[i]', 'FontSize', 20);
+    text(0 - label_dx, ys(1) - label_dy * range(ys), '[i]', 'FontSize', pltFontSize);
     
     plot([250, 250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(250 - label_dx, ys(1) - label_dy * range(ys), '[u]_1', 'FontSize', 20);
+    text(250 - label_dx, ys(1) - label_dy * range(ys), '[u]_1', 'FontSize', pltFontSize);
     
     plot([500, 500], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(500 - label_dx, ys(1) - label_dy * range(ys), '[j]_1', 'FontSize', 20);
+    text(500 - label_dx, ys(1) - label_dy * range(ys), '[j]_1', 'FontSize', pltFontSize);
     
     plot([750, 750], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(750 - label_dx, ys(1) - label_dy * range(ys), '[u]_2', 'FontSize', 20);
+    text(750 - label_dx, ys(1) - label_dy * range(ys), '[u]_2', 'FontSize', pltFontSize);
     
     plot([1000, 1000], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(1000 - label_dx, ys(1) - label_dy * range(ys), '[j]_2', 'FontSize', 20);
+    text(1000 - label_dx, ys(1) - label_dy * range(ys), '[j]_2', 'FontSize', pltFontSize);
     
     plot([1250, 1250], ys, '-', 'Color', [0.5, 0.5, 0.5]);
-    text(1250 - label_dx, ys(1) - label_dy * range(ys), '[u]_3', 'FontSize', 20);
-    text(1500 - label_dx, ys(1) - label_dy * range(ys), '[j]_3', 'FontSize', 20);
+    text(1250 - label_dx, ys(1) - label_dy * range(ys), '[u]_3', 'FontSize', pltFontSize);
+    text(1500 - label_dx, ys(1) - label_dy * range(ys), '[j]_3', 'FontSize', pltFontSize);
     
 %     set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', ...
 %         {'[i]', '[u]_1', '[j]_1', '[u]_2', '[j]_2', '[u]_3', '[j]_3'});
     set(gca, 'XLim', [0, 1500], 'XTick', [0 : 250 : 1500], 'XTickLabel', {});
-    xlabel('Piecewise normalized time'); ylabel('F2 change (Hz)');
     
-    draw_xy_axes
-    draw_sgn_bar(taxis0, p_FTN.(fld), 0.05, FDR_thresh.(fld), ...
-        ys(1) + 0.20 * range(ys), 0.02 * range(ys), 'k', [0.5, 0.5, 0.5], 'k');
+    hxl = xlabel('Piecewise normalized time'); 
+    set(hxl, 'Position', get(hxl, 'Position') + [0, -0.065 * range(ys), 0]);
+    
+    if i1 == 1 || i1 == 2 
+        hyl = ylabel('F2 change (Hz, mean\pmSEM)', 'FontSize', pltFontSize * 0.9);
+        set(hyl, 'Position', get(hyl, 'Position') + [0, 0.1 * range(ys), 0]);
+    else
+        hyl = ylabel('F2 difference (Hz, mean\pmSEM)', 'FontSize', pltFontSize * 0.9);
+        set(hyl, 'Position', get(hyl, 'Position') + [0, 0.0 * range(ys), 0]);
+    end
+    
+    draw_xy_axes;
+    
+%     draw_sgn_bar(taxis0, p_FTN.(fld), 0.05, FDR_thresh.(fld), ...
+%         ys(1) + 0.20 * range(ys), 0.02 * range(ys), 'k', [0.5, 0.5, 0.5], 'k');
+
+    if i1 == 1 % -- Make legend -- %
+        % - Trace legend - %
+        xs = get(gca, 'XLim'); ys = get(gca, 'YLim');
+        
+        trcT = linspace(xs(1) + trcLgdX0 * range(xs), xs(1) + trcLgdX1 * range(xs), trcLgdN);
+        trcV = repmat(ys(1) + trcLgdY.PFS * range(ys), 1, trcLgdN);
+        trcE = repmat(trcLgdH * range(ys), 1, trcLgdN);
+        plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PFS); hold on;
+        plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PFS, 'patch');
+        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PFS * range(ys), 'PFS', 'Color', colors.PFS, 'FontSize', pltFontSize * 0.75);
+        
+        trcV = repmat(ys(1) + trcLgdY.PWS * range(ys), 1, trcLgdN);
+        plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PWS); hold on;
+        plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PWS, 'patch');
+        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PWS * range(ys), 'PWS', 'Color', colors.PWS, 'FontSize', pltFontSize * 0.75);
+        
+        % - Significance symbol legend - %
+        rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        text(xs(1) + (lgdX + 0.08 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'n.s.', ...
+             'FontSize', pltFontSize * 0.65);
+         
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3) * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 1 - 0.5 * (1 - colors.grpContr), 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 1 - 0.5 * (1 - colors.PWS), 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', 1 - 0.5 * (1 - colors.PFS), 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        text(xs(1) + (lgdX + lgdW / 3 + 0.06 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'Uncorr.', ...
+             'FontSize', pltFontSize * 0.65);
+         
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3 * 2) * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...                  
+                  'FaceColor', colors.grpContr, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3 * 2) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', colors.PWS, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        rectangle('Position', [xs(1) + (lgdX + lgdW / 3 * 2) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
+                  'FaceColor', colors.PFS, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
+        text(xs(1) + (lgdX + lgdW / 3 * 2 + 0.04 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'Corrected', ...
+            'FontSize', pltFontSize * 0.65);
+        
+    end
 end
 
 % ds.chgTrajF2_FTN_PFS.up = ds.chgTrajF2_FTN_PFS.contrast;
@@ -331,7 +507,7 @@ figure('color', 'w');
 XLim = [0, 500];
 for i1 = 1 : 2
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    metaTracePlot_(ds.avgPertShiftF2_IOA_PFS, ds.avgPertShiftF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors);
+    metaTracePlot_(ds.avgPertShiftF2_IOA_PFS, ds.avgPertShiftF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
 end
 
 IOA_N = round(IOA_WIN / FRAME_DUR);
@@ -340,7 +516,7 @@ for i1 = 1 : 2
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
     subplot('Position', [0.1 + 0.45 * (i1 - 1), 0.15, 0.4, 0.8]);
     set(gca, 'FontSize', fontSize);
-    metaTracePlot_(ds.avgChgTrajF2_IOA_PFS, ds.avgChgTrajF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors);
+    metaTracePlot_(ds.avgChgTrajF2_IOA_PFS, ds.avgChgTrajF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
     set(gca, 'YLim', [-60, 60]);
     
     [p_IOA.down, p_IOA.up, FDR_thresh.down, FDR_thresh.up] = ...
@@ -372,7 +548,7 @@ ds.chgTrajF2_IOA_PWS.down = ds.chgTrajF2_IOA_PWS.contrast;
 
 figure('Position', [50, 100, 400, 400], 'color', 'w');
 set(gca, 'FontSize', fontSize);
-metaTracePlot_(ds.avgChgTrajF2_IOA_contrast_PFS, ds.avgChgTrajF2_IOA_contrast_PWS, [], XLim, FRAME_DUR * 1e3, colors);
+metaTracePlot_(ds.avgChgTrajF2_IOA_contrast_PFS, ds.avgChgTrajF2_IOA_contrast_PWS, [], XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
 draw_xy_axes;
 xlabel('Time from [i] (ms)');
 ylabel('Down-Up F2 response contrast (Hz)');
@@ -387,7 +563,7 @@ figure('Color', 'white', 'Position', [100, 100, 1600, 700], ...
            'Name', ['FTN F2 change trajectorys: ', fld]);
 subplot('Position', [0.1, 0.35, 0.8, 0.55]);
 set(gca, 'FontSize', 30);
-metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS, ds.avgChgTrajF2_FTN_contrast_PWS, [], XLim, 1, colors);    
+metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS, ds.avgChgTrajF2_FTN_contrast_PWS, [], XLim, 1, colors, shadeWhitenFactor);
 
 ylabel('Down-Up F2 contrast (Hz)');
 set(gca, 'YLim', [-25, 55]);
@@ -512,12 +688,12 @@ metaPlot_2grp(u2F2_downUp, 'PFS', 'PWS', 'u2F2: down - up', ...
 return
 
 %%
-function metaTracePlot_(traj_PFS, traj_PWS, fld, XLim, FRAME_DUR, colors)
+function metaTracePlot_(traj_PFS, traj_PWS, fld, XLim, FRAME_DUR, colors, whitenFactor)
 if ~isempty(fld)
     plot(XLim, [0, 0], '-', 'Color', [0.5, 0.5, 0.5]); hold on;
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PFS.(fld), 1) - 1);
     plot(tAxis, traj_PFS.(fld)(:, 1), 'LineWidth', 1, 'Color', colors.PFS); hold on;
-    plot_sd_t(tAxis, traj_PFS.(fld)(:, 1), traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), 0.5 + 0.5 * colors.PFS, 'patch');
+    plot_sd_t(tAxis, traj_PFS.(fld)(:, 1), traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PFS, 'patch');
 
     % plot(tAxis, traj_PFS.(fld)(:, 1) - traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), ...
     %     'LineWidth', 0.5, 'Color', colors.(fld));
@@ -526,7 +702,7 @@ if ~isempty(fld)
 
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PWS.(fld), 1) - 1);
     plot(tAxis, traj_PWS.(fld)(:, 1), '-', 'LineWidth', 1, 'Color', colors.PWS); hold on;
-    plot_sd_t(tAxis, traj_PWS.(fld)(:, 1), traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), 0.5 + 0.5 * colors.PWS, 'patch');
+    plot_sd_t(tAxis, traj_PWS.(fld)(:, 1), traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PWS, 'patch');
 
     % plot(tAxis, traj_PWS.(fld)(:, 1) - traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), ...
     %     '--', 'LineWidth', 0.5, 'Color', colors.(fld));
@@ -539,12 +715,13 @@ else
     plot(XLim, [0, 0], '-', 'Color', [0.5, 0.5, 0.5]); hold on;
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PFS, 1) - 1);
     plot(tAxis, traj_PFS(:, 1), 'LineWidth', 1, 'Color', colors.PFS); hold on;
-    plot_sd_t(tAxis, traj_PFS(:, 1), traj_PFS(:, 2) ./ sqrt(traj_PFS(:, 3)), 0.5 + 0.5 * colors.PFS, 'patch');
+    plot_sd_t(tAxis, traj_PFS(:, 1), traj_PFS(:, 2) ./ sqrt(traj_PFS(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PFS, 'patch');
 
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PWS, 1) - 1);
     plot(tAxis, traj_PWS(:, 1), '-', 'LineWidth', 1, 'Color', colors.PWS); hold on;
-    plot_sd_t(tAxis, traj_PWS(:, 1), traj_PWS(:, 2) ./ sqrt(traj_PWS(:, 3)), 0.5 + 0.5 * colors.PWS, 'patch');
+    plot_sd_t(tAxis, traj_PWS(:, 1), traj_PWS(:, 2) ./ sqrt(traj_PWS(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PWS, 'patch');
 
     set(gca, 'XLim', XLim);
 end
- return
+return
+
