@@ -2,6 +2,7 @@ function p_STUT_T_analysis(nPerm, varargin)
 %%
 colors.PFS = [0, 0, 0];
 colors.PWS = [1, 0, 0];
+colors.grpContr = [0, 0, 1];
 
 colors.accel=[1,0.5,0];
 colors.decel=[0,0.5,0];
@@ -218,6 +219,36 @@ corrps = struct;
                                                '--permfile', 'perm_files/p_STUT_T_analysis_WG_%d.mat');
 % ## Columns of corrps_wg and uncorrps_wg: [accel, dece, contr] ##
 
+%% By-pert plots for STUT_AP_Paper2
+% --- Visualization options --- %
+bpPlotW = 480;
+bpPlotH = 320;
+% --- ~Visualization options --- %
+
+perts = {'accel', 'decel', 'contr'};
+for i1 = 1 : numel(perts)
+    pert = perts{i1};
+    
+    figure('Position', [100, 150, bpPlotW, bpPlotH]);
+    hold on;
+    
+    for i2 = 1 : numel(groups)
+        grp = groups{i2};
+        
+        if isequal(pert, 'accel') || isequal(pert, 'decel')
+            errorbar(1 : 6, ...
+                     [mean(chg_IUInt.(grp)(:, i1)), mean(chg_IYInt.(grp)(:, i1)), ...
+                      mean(chg_IU2Int.(grp)(:, i1)), mean(chg_IY2Int.(grp)(:, i1)), ...
+                      mean(chg_IU3Int.(grp)(:, i1)), mean(chg_IY3Int.(grp)(:, i1))], ...
+                     [ste(chg_IUInt.(grp)(:, i1)), ste(chg_IYInt.(grp)(:, i1)), ...
+                      ste(chg_IU2Int.(grp)(:, i1)), ste(chg_IY2Int.(grp)(:, i1)), ...
+                      ste(chg_IU3Int.(grp)(:, i1)), ste(chg_IY3Int.(grp)(:, i1))], ...
+                     'Color', colors.(grp));
+        end
+    end
+end
+
+%%
 groups = {'PFS', 'PWS'};
 figure('Position', [50, 75, 1200, 600]);
 for i1 = 1 : 2
