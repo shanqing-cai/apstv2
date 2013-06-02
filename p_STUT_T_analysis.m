@@ -2,6 +2,7 @@ function p_STUT_T_analysis(nPerm, varargin)
 %%
 colors.PFS = [0, 0, 0];
 colors.PWS = [1, 0, 0];
+colors.grpContr = [0, 0, 1];
 
 colors.accel=[1,0.5,0];
 colors.decel=[0,0.5,0];
@@ -207,7 +208,7 @@ fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
 corrps = struct;
 [ps_1, ps_2, ps_12, ...
     FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
-    corrps.contr] ...
+    corrps_bg] ...
     = compare_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
                         chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
                         '--perm', nPerm, ...
@@ -218,6 +219,110 @@ corrps = struct;
                                                '--permfile', 'perm_files/p_STUT_T_analysis_WG_%d.mat');
 % ## Columns of corrps_wg and uncorrps_wg: [accel, dece, contr] ##
 
+%% By-pert plots for STUT_AP_Paper2
+% --- Visualization options --- %
+nInts = 6;
+
+bpPlotW = 480;
+bpPlotH = 320;
+bpLW = 1;
+
+bpCorrPThresh = 0.05;
+bpMkEdgeClr = [0, 0, 0];
+bpXLim = [0.5, nInts + 0.5];
+
+gray = [0.5, 0.5, 0.5];
+
+bpFontSize = 12;
+
+bpBGMkSize = 9;
+
+tIntNames = {'[i]-[u]_1', '[i]-[j]_1', '[i]-[u]_2', '[i]-[j]_2', '[i]-[u]_3', '[i]-[j]_3'};
+% --- ~Visualization options --- %
+
+perts = {'accel', 'decel', 'contr'};
+for i1 = 1 : numel(perts)
+    pert = perts{i1};
+    
+    figure('Position', [100, 150, bpPlotW, bpPlotH]);
+    set(gca, 'FontSize', bpFontSize);
+    hold on;
+    
+    plot(bpXLim, [0, 0], 'Color', gray);
+    
+    for i2 = 1 : numel(groups)
+        grp = groups{i2};
+        
+        if isequal(pert, 'accel') || isequal(pert, 'decel')
+            dat_mean = 1e3 * [mean(chg_IUInt.(grp)(:, i1)), mean(chg_IYInt.(grp)(:, i1)), ...
+                        mean(chg_IU2Int.(grp)(:, i1)), mean(chg_IY2Int.(grp)(:, i1)), ...
+                        mean(chg_IU3Int.(grp)(:, i1)), mean(chg_IY3Int.(grp)(:, i1))];
+            dat_sem = 1e3 * [ste(chg_IUInt.(grp)(:, i1)), ste(chg_IYInt.(grp)(:, i1)), ...
+                       ste(chg_IU2Int.(grp)(:, i1)), ste(chg_IY2Int.(grp)(:, i1)), ...
+                       ste(chg_IU3Int.(grp)(:, i1)), ste(chg_IY3Int.(grp)(:, i1))];
+                   
+            y_label = 'Time-interval change from noPert (ms, mean\pmSEM)';
+        else
+            dat_mean = 1e3 * [mean(chg_IUInt.(grp)(:, 2) - chg_IUInt.(grp)(:, 1)), mean(chg_IYInt.(grp)(:, 2) - chg_IYInt.(grp)(:, 1)), ...
+                        mean(chg_IU2Int.(grp)(:, 2) - chg_IU2Int.(grp)(:, 1)), mean(chg_IY2Int.(grp)(:, 2) - chg_IY2Int.(grp)(:, 1)), ...
+                        mean(chg_IU3Int.(grp)(:, 2) - chg_IU3Int.(grp)(:, 1)), mean(chg_IY3Int.(grp)(:, 2) - chg_IY3Int.(grp)(:, 1))];
+            dat_sem = 1e3 * [ste(chg_IUInt.(grp)(:, 2) - chg_IUInt.(grp)(:, 1)), ste(chg_IYInt.(grp)(:, 2) - chg_IYInt.(grp)(:, 1)), ...
+                       ste(chg_IU2Int.(grp)(:, 2) - chg_IU2Int.(grp)(:, 1)), ste(chg_IY2Int.(grp)(:, 2) - chg_IY2Int.(grp)(:, 1)), ...
+                       ste(chg_IU3Int.(grp)(:, 2) - chg_IU3Int.(grp)(:, 1)), ste(chg_IY3Int.(grp)(:, 2) - chg_IY3Int.(grp)(:, 1))];
+
+            y_label = 'Time-interval difference (ms, mean\pmSEM)';
+        end
+        
+        errorbar(1 : nInts, dat_mean, dat_sem, ...
+                 'Color', colors.(grp), 'LineWidth', bpLW);
+        
+        % -- Show within-group significance -- %
+        for i3 = 1 : nInts
+            if corrps_wg.(grp)(i3, i1) < bpCorrPThresh
+                mkFaceClr = colors.(grp);
+            else
+                mkFaceClr = [1, 1, 1];
+            end
+            
+            plot(i3, dat_mean(i3), 'o', ...
+                 'MarkerFaceColor', mkFaceClr, 'MarkerEdgeColor', colors.(grp), ...
+                 'LineWidth', bpLW);
+        end
+                 
+    end
+
+     % -- Show between-group significance -- %
+    ys = get(gca, 'YLim');
+    yAst = ys(2) - 0.05 * range(ys);
+    for i3 = 1 : nInts
+        if corrps_bg.(pert)(i3) < bpCorrPThresh
+            plot(i3, yAst, '*', 'color', colors.grpContr, 'MarkerSize', bpBGMkSize);
+            
+            plot(i3 + [-0.1, 0.1], repmat(yAst - 0.03 * range(ys), 1, 2), '-', 'Color', colors.grpContr);
+            plot(i3 + [-0.1, -0.1], yAst - [0.03, 0.06] * range(ys), '-', 'Color', colors.grpContr);
+            plot(i3 + [0.1, 0.1], yAst - [0.03, 0.06] * range(ys), '-', 'Color', colors.grpContr);
+        end
+        
+        
+    end
+
+    set(gca, 'XLim', bpXLim);
+    ylabel(y_label, 'FontSize', bpFontSize - 1);
+    set(gca, 'XTick', 1 : nInts, 'XTickLabel', {});
+    
+    tNameHs = nan(1, nInts);
+    for i3 = 1 : nInts
+        tNameHs(i3) = text(i3 - 0.2, ys(1) - 0.05 * range(ys), tIntNames{i3}, ...
+             'FontSize', bpFontSize);
+    end
+    
+    hxl = xlabel('Time interval');
+    set(hxl, 'Position', get(hxl, 'Position') + [0, -range(ys) * 0.05, 0]);
+
+    box on;
+end
+
+%%
 groups = {'PFS', 'PWS'};
 figure('Position', [50, 75, 1200, 600]);
 for i1 = 1 : 2
