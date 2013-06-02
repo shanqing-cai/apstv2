@@ -154,6 +154,25 @@ for i1 = 1 : numel(groups)
             1e2 * sum(ds.(['nDscd_prodErr_', (grp)])) / sum(ds.(['nTotTrials_', (grp)])));
 end
 
+%% Stats about speaking rate
+[~, p_bgt_IUInt] = ttest2(ds.IUInt_PFS(:, 1), ds.IUInt_PWS(:, 1));
+fprintf(1, '--- Speaking rate stats --- \n');
+fprintf(1, '-- IUInt (noPert) --\n');
+fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IUInt_PFS(:, 1)), 1e3 * std(ds.IUInt_PFS(:, 1)));
+fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IUInt_PWS(:, 1)), 1e3 * std(ds.IUInt_PWS(:, 1)));
+fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IUInt);
+
+[~, p_bgt_IYInt] = ttest2(ds.IYInt_PFS(:, 1), ds.IYInt_PWS(:, 1));
+fprintf(1, '--- Speaking rate stats --- \n');
+fprintf(1, '-- IYInt (noPert) --\n');
+fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IYInt_PFS(:, 1)), 1e3 * std(ds.IYInt_PFS(:, 1)));
+fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.IYInt_PWS(:, 1)), 1e3 * std(ds.IYInt_PWS(:, 1)));
+fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IYInt);
+
 %% Results: F2 compensation trajectories: un-normalized (real) time
 XLim = [0, 500];
 for i1 = 1 : 2
@@ -395,8 +414,12 @@ corrps = struct;
     corrps.contr] ...
     = compare_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
                         chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
-                        '--perm', 100000, ...
+                        '--perm', 10000, ...
                         '--permfile', 'perm_files/p_STUT_T_tIntChgs_%d.mat');
+                    
+corrps_wg = perm_test_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
+                                chg_IY2Int, chg_IU3Int, chg_IY3Int);
+                    
 groups = {'PFS', 'PWS'};
 figure('Position', [50, 75, 1200, 600]);
 for i1 = 1 : 2
