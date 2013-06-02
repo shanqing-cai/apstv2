@@ -1,4 +1,4 @@
-function p_STUT_T_analysis(varargin)
+function p_STUT_T_analysis(nPerm, varargin)
 %%
 colors.PFS = [0, 0, 0];
 colors.PWS = [1, 0, 0];
@@ -172,6 +172,87 @@ fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
 fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
         1e3 * mean(ds.IYInt_PWS(:, 1)), 1e3 * std(ds.IYInt_PWS(:, 1)));
 fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IYInt);
+
+%% Systematic timing change comparison
+chg_IUInt.PFS = ds.IUInt_PFS(:, 2:3) - repmat(ds.IUInt_PFS(:, 1), 1, 2);
+chg_IYInt.PFS = ds.IYInt_PFS(:, 2:3) - repmat(ds.IYInt_PFS(:, 1), 1, 2);
+chg_IU2Int.PFS = ds.IU2Int_PFS(:, 2:3) - repmat(ds.IU2Int_PFS(:, 1), 1, 2);
+chg_IY2Int.PFS = ds.IY2Int_PFS(:, 2:3) - repmat(ds.IY2Int_PFS(:, 1), 1, 2);
+chg_IU3Int.PFS = ds.IU3Int_PFS(:, 2:3) - repmat(ds.IU3Int_PFS(:, 1), 1, 2);
+chg_IY3Int.PFS = ds.IY3Int_PFS(:, 2:3) - repmat(ds.IY3Int_PFS(:, 1), 1, 2);
+
+chg_IUInt.PWS = ds.IUInt_PWS(:, 2:3) - repmat(ds.IUInt_PWS(:, 1), 1, 2);
+chg_IYInt.PWS = ds.IYInt_PWS(:, 2:3) - repmat(ds.IYInt_PWS(:, 1), 1, 2);
+chg_IU2Int.PWS = ds.IU2Int_PWS(:, 2:3) - repmat(ds.IU2Int_PWS(:, 1), 1, 2);
+chg_IY2Int.PWS = ds.IY2Int_PWS(:, 2:3) - repmat(ds.IY2Int_PWS(:, 1), 1, 2);
+chg_IU3Int.PWS = ds.IU3Int_PWS(:, 2:3) - repmat(ds.IU3Int_PWS(:, 1), 1, 2);
+chg_IY3Int.PWS = ds.IY3Int_PWS(:, 2:3) - repmat(ds.IY3Int_PWS(:, 1), 1, 2);
+
+% --- Mean ratio of compensation --- %
+ratio_compen_iuInt_PFS = mean(chg_IUInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
+ratio_compen_iuInt_PWS = mean(chg_IUInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
+
+fprintf(1, 'Ratio of compensation (IUInt)\n');
+fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iuInt_PFS);
+fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iuInt_PWS);
+
+ratio_compen_iyInt_PFS = mean(chg_IYInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
+ratio_compen_iyInt_PWS = mean(chg_IYInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
+
+fprintf(1, 'Ratio of compensation (IYInt)\n');
+fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iyInt_PFS);
+fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
+
+% --- tInt change comparisons between group, with permutation test --- %
+corrps = struct;
+[ps_1, ps_2, ps_12, ...
+    FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
+    corrps.contr] ...
+    = compare_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
+                        chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
+                        '--perm', nPerm, ...
+                        '--permfile', 'perm_files/p_STUT_T_tIntChgs_%d.mat');
+                    
+[corrps_wg, uncorrps_wg] = perm_test_tInt_chgs(nPerm, chg_IUInt, chg_IYInt, chg_IU2Int, ...
+                                               chg_IY2Int, chg_IU3Int, chg_IY3Int, ...
+                                               '--permfile', 'perm_files/p_STUT_T_analysis_WG_%d.mat');
+% ## Columns of corrps_wg and uncorrps_wg: [accel, dece, contr] ##
+
+groups = {'PFS', 'PWS'};
+figure('Position', [50, 75, 1200, 600]);
+for i1 = 1 : 2
+    subplot('Position', [0.05, 0.15 + (2 - i1) * 0.4, 0.9, 0.4]);
+    grp = groups{i1};
+    if i1 == 2
+        t_int_sum(chg_IUInt.(grp), chg_IYInt.(grp), chg_IU2Int.(grp), chg_IY2Int.(grp), chg_IU3Int.(grp), chg_IY3Int.(grp), colors,...
+                'windowWidth', 500, 'windowHeight', 260, 'fontSize', fontSize, 'noFigure', 'YLim', [-5, 15]);
+    else
+        t_int_sum(chg_IUInt.(grp), chg_IYInt.(grp), chg_IU2Int.(grp), chg_IY2Int.(grp), chg_IU3Int.(grp), chg_IY3Int.(grp), colors,...
+                'windowWidth', 500, 'windowHeight', 260, 'fontSize', fontSize, 'noFigure', 'noLabel', 'YLim', [-5, 15]);
+    end
+    
+    if i1 == 2
+        ys = get(gca, 'YLim');
+        
+        text(0.05, ys(2) - 0.045 * range(ys), 'Accel comp.: ', 'color', colors.accel);
+        text(0.05, ys(2) - 0.090 * range(ys), 'Decel comp.: ', 'color', colors.decel);
+        text(0.05, ys(2) - 0.135 * range(ys), 'Decel-Accel comp.: ', 'color', 'k');
+        for k1 = 1 : 6
+%             fw1 = ps_1(k1) < FDR_p_thresh_1;
+%             fw2 = ps_2(k1) < FDR_p_thresh_2;
+%             fw12 = ps_12(k1) < FDR_p_thresh_12;
+            fw1 = ps_1(k1) < 0.05;
+            fw2 = ps_2(k1) < 0.05;
+            fw12 = ps_12(k1) < 0.05;
+            if fw1 == 1;    fw1 = 'Bold';   else, fw1 = 'Normal'; end
+            if fw2 == 1;    fw2 = 'Bold';   else, fw2 = 'Normal'; end
+            if fw12 == 1;    fw12 = 'Bold';   else, fw12 = 'Normal'; end
+            text(k1 - 0.1, ys(2) - 0.045 * range(ys), sprintf('%.4f', ps_1(k1)), 'color', colors.accel, 'FontWeight', fw1);
+            text(k1 - 0.1, ys(2) - 0.090 * range(ys), sprintf('%.4f', ps_2(k1)), 'color', colors.decel, 'FontWeight', fw2);
+            text(k1 - 0.1, ys(2) - 0.135 * range(ys), sprintf('%.4f', ps_12(k1)), 'color', 'k', 'FontWeight', fw12);
+        end
+    end
+end
 
 %% Results: F2 compensation trajectories: un-normalized (real) time
 XLim = [0, 500];
@@ -377,84 +458,7 @@ metaPlot_2grp(IYInt_decelAccel, 'PFS', 'PWS', 'IYInt: decel - noPert', ...
 % metaPlot_2grp(I_UYMidF_Int_decelAccel, 'PFS', 'PWS', 'I_UYMidF_Int: decel - accel', ...
 %     'I_UYMidF_Int change: decel - accel', colors, 'zeroLine');
 
-%% Systematic timing change comparison
-chg_IUInt.PFS = ds.IUInt_PFS(:, 2:3) - repmat(ds.IUInt_PFS(:, 1), 1, 2);
-chg_IYInt.PFS = ds.IYInt_PFS(:, 2:3) - repmat(ds.IYInt_PFS(:, 1), 1, 2);
-chg_IU2Int.PFS = ds.IU2Int_PFS(:, 2:3) - repmat(ds.IU2Int_PFS(:, 1), 1, 2);
-chg_IY2Int.PFS = ds.IY2Int_PFS(:, 2:3) - repmat(ds.IY2Int_PFS(:, 1), 1, 2);
-chg_IU3Int.PFS = ds.IU3Int_PFS(:, 2:3) - repmat(ds.IU3Int_PFS(:, 1), 1, 2);
-chg_IY3Int.PFS = ds.IY3Int_PFS(:, 2:3) - repmat(ds.IY3Int_PFS(:, 1), 1, 2);
 
-chg_IUInt.PWS = ds.IUInt_PWS(:, 2:3) - repmat(ds.IUInt_PWS(:, 1), 1, 2);
-chg_IYInt.PWS = ds.IYInt_PWS(:, 2:3) - repmat(ds.IYInt_PWS(:, 1), 1, 2);
-chg_IU2Int.PWS = ds.IU2Int_PWS(:, 2:3) - repmat(ds.IU2Int_PWS(:, 1), 1, 2);
-chg_IY2Int.PWS = ds.IY2Int_PWS(:, 2:3) - repmat(ds.IY2Int_PWS(:, 1), 1, 2);
-chg_IU3Int.PWS = ds.IU3Int_PWS(:, 2:3) - repmat(ds.IU3Int_PWS(:, 1), 1, 2);
-chg_IY3Int.PWS = ds.IY3Int_PWS(:, 2:3) - repmat(ds.IY3Int_PWS(:, 1), 1, 2);
-
-% --- Mean ratio of compensation --- %
-ratio_compen_iuInt_PFS = mean(chg_IUInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
-ratio_compen_iuInt_PWS = mean(chg_IUInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
-
-fprintf(1, 'Ratio of compensation (IUInt)\n');
-fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iuInt_PFS);
-fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iuInt_PWS);
-
-ratio_compen_iyInt_PFS = mean(chg_IYInt.PFS(:, 2)) ./ mean(ds.uTimeShift_decel_PFS');
-ratio_compen_iyInt_PWS = mean(chg_IYInt.PWS(:, 2)) ./ mean(ds.uTimeShift_decel_PWS');
-
-fprintf(1, 'Ratio of compensation (IYInt)\n');
-fprintf(1, '\tPFS: mean = %f\n', ratio_compen_iyInt_PFS);
-fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
-
-% --- tInt change comparisons between group, with permutation test --- %
-corrps = struct;
-[ps_1, ps_2, ps_12, ...
-    FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
-    corrps.contr] ...
-    = compare_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
-                        chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
-                        '--perm', 10000, ...
-                        '--permfile', 'perm_files/p_STUT_T_tIntChgs_%d.mat');
-                    
-corrps_wg = perm_test_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
-                                chg_IY2Int, chg_IU3Int, chg_IY3Int);
-                    
-groups = {'PFS', 'PWS'};
-figure('Position', [50, 75, 1200, 600]);
-for i1 = 1 : 2
-    subplot('Position', [0.05, 0.15 + (2 - i1) * 0.4, 0.9, 0.4]);
-    grp = groups{i1};
-    if i1 == 2
-        t_int_sum(chg_IUInt.(grp), chg_IYInt.(grp), chg_IU2Int.(grp), chg_IY2Int.(grp), chg_IU3Int.(grp), chg_IY3Int.(grp), colors,...
-                'windowWidth', 500, 'windowHeight', 260, 'fontSize', fontSize, 'noFigure', 'YLim', [-5, 15]);
-    else
-        t_int_sum(chg_IUInt.(grp), chg_IYInt.(grp), chg_IU2Int.(grp), chg_IY2Int.(grp), chg_IU3Int.(grp), chg_IY3Int.(grp), colors,...
-                'windowWidth', 500, 'windowHeight', 260, 'fontSize', fontSize, 'noFigure', 'noLabel', 'YLim', [-5, 15]);
-    end
-    
-    if i1 == 2
-        ys = get(gca, 'YLim');
-        
-        text(0.05, ys(2) - 0.045 * range(ys), 'Accel comp.: ', 'color', colors.accel);
-        text(0.05, ys(2) - 0.090 * range(ys), 'Decel comp.: ', 'color', colors.decel);
-        text(0.05, ys(2) - 0.135 * range(ys), 'Decel-Accel comp.: ', 'color', 'k');
-        for k1 = 1 : 6
-%             fw1 = ps_1(k1) < FDR_p_thresh_1;
-%             fw2 = ps_2(k1) < FDR_p_thresh_2;
-%             fw12 = ps_12(k1) < FDR_p_thresh_12;
-            fw1 = ps_1(k1) < 0.05;
-            fw2 = ps_2(k1) < 0.05;
-            fw12 = ps_12(k1) < 0.05;
-            if fw1 == 1;    fw1 = 'Bold';   else, fw1 = 'Normal'; end
-            if fw2 == 1;    fw2 = 'Bold';   else, fw2 = 'Normal'; end
-            if fw12 == 1;    fw12 = 'Bold';   else, fw12 = 'Normal'; end
-            text(k1 - 0.1, ys(2) - 0.045 * range(ys), sprintf('%.4f', ps_1(k1)), 'color', colors.accel, 'FontWeight', fw1);
-            text(k1 - 0.1, ys(2) - 0.090 * range(ys), sprintf('%.4f', ps_2(k1)), 'color', colors.decel, 'FontWeight', fw2);
-            text(k1 - 0.1, ys(2) - 0.135 * range(ys), sprintf('%.4f', ps_12(k1)), 'color', 'k', 'FontWeight', fw12);
-        end
-    end
-end
 
 %% Generate long-format R table for analyses in R
 chg_header = ['subject grp sdir tint value'];
