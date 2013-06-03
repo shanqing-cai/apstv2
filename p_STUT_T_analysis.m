@@ -135,7 +135,7 @@ fprintf(1, '\tPFS: %dF%dM\n', ...
         numel(find(genders.PFS == 0)), numel(find(genders.PFS == 1)));
 gender_p = chi2test([numel(find(genders.PWS == 0)), numel(find(genders.PWS == 1)); ...
               numel(find(genders.PFS == 0)), numel(find(genders.PFS == 1))]);
-fprintf(1, 'ttest2: p = %f\n\n', gender_p);
+fprintf(1, 'chi^2 test: p = %f\n\n', gender_p);
 
 fprintf(1, '-- SSI-4 scores (PWS) --\n');
 fprintf(1, '\tMedian = %.2f; IQR = %.2f; mean = %.2f; SD = %.2f; range = %.2f - %.2f\n\n', ...
@@ -173,6 +173,24 @@ fprintf(1, '\tPFS: mean = %.2f ms; SD = %.2f ms\n', ...
 fprintf(1, '\tPWS: mean = %.2f ms; SD = %.2f ms\n', ...
         1e3 * mean(ds.IYInt_PWS(:, 1)), 1e3 * std(ds.IYInt_PWS(:, 1)));
 fprintf(1, '\tttest2: p = %f\n\n', p_bgt_IYInt);
+
+%% Stats about temporal perturbation: Accel and Decel;
+fprintf(1, '--- Temporoal perturbation stats: [u]_1 time --- \n');
+[~, tt_p_uTime_accel] = ttest2(ds.uTimeShift_accel_PWS, ds.uTimeShift_accel_PFS);
+[~, tt_p_uTime_decel] = ttest2(ds.uTimeShift_decel_PWS, ds.uTimeShift_decel_PFS);
+
+fprintf(1, 'PFS: Accel: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.uTimeShift_accel_PFS), 1e3 * std(ds.uTimeShift_accel_PFS));
+fprintf(1, 'PWS: Accel: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.uTimeShift_accel_PWS), 1e3 * std(ds.uTimeShift_accel_PWS));
+fprintf(1, 't-test: p = %f\n\n', tt_p_uTime_accel);
+
+fprintf(1, 'PWS: Decel: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.uTimeShift_decel_PWS), 1e3 * std(ds.uTimeShift_decel_PWS));
+fprintf(1, 'PFS: Decel: mean = %.2f ms; SD = %.2f ms\n', ...
+        1e3 * mean(ds.uTimeShift_decel_PFS), 1e3 * std(ds.uTimeShift_decel_PFS));
+fprintf(1, 't-test: p = %f\n', tt_p_uTime_decel);
+fprintf(1, '\n');
 
 %% Systematic timing change comparison
 chg_IUInt.PFS = ds.IUInt_PFS(:, 2:3) - repmat(ds.IUInt_PFS(:, 1), 1, 2);
