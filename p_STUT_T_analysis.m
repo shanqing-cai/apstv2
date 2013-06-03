@@ -224,6 +224,17 @@ fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
 
 % --- tInt change comparisons between group, with permutation test --- %
 corrps = struct;
+
+% -- DEBUG: Reality check -- %
+% dummyOffset = -2e-3;
+% chg_IUInt.PWS(:, 2) = chg_IUInt.PWS(:, 2) + dummyOffset;
+% chg_IYInt.PWS(:, 2) = chg_IYInt.PWS(:, 2) + dummyOffset;
+% chg_IU2Int.PWS(:, 2) = chg_IU2Int.PWS(:, 2) + dummyOffset;
+% chg_IY2Int.PWS(:, 2) = chg_IY2Int.PWS(:, 2) + dummyOffset;
+% chg_IU3Int.PWS(:, 2) = chg_IU3Int.PWS(:, 2) + dummyOffset;
+% chg_IY3Int.PWS(:, 2) = chg_IY3Int.PWS(:, 2) + dummyOffset;
+% -- ~DEBUG: Reality check -- %
+
 [ps_1, ps_2, ps_12, ...
     FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
     corrps_bg] ...
@@ -231,6 +242,7 @@ corrps = struct;
                         chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
                         '--perm', nPerm, ...
                         '--permfile', 'perm_files/p_STUT_T_tIntChgs_%d.mat');
+                    
                     
 [corrps_wg, uncorrps_wg] = perm_test_tInt_chgs(nPerm, chg_IUInt, chg_IYInt, chg_IU2Int, ...
                                                chg_IY2Int, chg_IU3Int, chg_IY3Int, ...
