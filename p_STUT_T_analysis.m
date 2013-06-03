@@ -208,7 +208,7 @@ fprintf(1, '\tPWS: mean = %f\n\n', ratio_compen_iyInt_PWS);
 corrps = struct;
 [ps_1, ps_2, ps_12, ...
     FDR_p_thresh_1, FDR_p_thresh_2, FDR_p_thresh_12, ...
-    corrps.contr] ...
+    corrps_bg] ...
     = compare_tInt_chgs(chg_IUInt, chg_IYInt, chg_IU2Int, ...
                         chg_IY2Int, chg_IU3Int, chg_IY3Int, 0.05, ...
                         '--perm', nPerm, ...
@@ -221,8 +221,24 @@ corrps = struct;
 
 %% By-pert plots for STUT_AP_Paper2
 % --- Visualization options --- %
-bpPlotW = 480;
-bpPlotH = 320;
+nInts = 6;
+
+bpPlotW = 400;
+bpPlotH = 280;
+bpLW = 1;
+
+bpCorrPThresh = 0.05;
+bpMkEdgeClr = [0, 0, 0];
+bpXLim = [0.5, nInts + 0.5];
+
+gray = [0.5, 0.5, 0.5];
+
+bpFontSize = 12.5;
+
+bpBGMkSize = 9;
+
+tIntNames = {'[i]-[u]_1', '[i]-[j]_1', '[i]-[u]_2', '[i]-[j]_2', '[i]-[u]_3', '[i]-[j]_3'};
+unitFormat = '(ms, mean\pmSEM)';
 % --- ~Visualization options --- %
 
 perts = {'accel', 'decel', 'contr'};
@@ -230,21 +246,155 @@ for i1 = 1 : numel(perts)
     pert = perts{i1};
     
     figure('Position', [100, 150, bpPlotW, bpPlotH]);
+    set(gca, 'FontSize', bpFontSize);
     hold on;
+    
+    plot(bpXLim, [0, 0], 'Color', gray);
     
     for i2 = 1 : numel(groups)
         grp = groups{i2};
         
         if isequal(pert, 'accel') || isequal(pert, 'decel')
-            errorbar(1 : 6, ...
-                     [mean(chg_IUInt.(grp)(:, i1)), mean(chg_IYInt.(grp)(:, i1)), ...
-                      mean(chg_IU2Int.(grp)(:, i1)), mean(chg_IY2Int.(grp)(:, i1)), ...
-                      mean(chg_IU3Int.(grp)(:, i1)), mean(chg_IY3Int.(grp)(:, i1))], ...
-                     [ste(chg_IUInt.(grp)(:, i1)), ste(chg_IYInt.(grp)(:, i1)), ...
-                      ste(chg_IU2Int.(grp)(:, i1)), ste(chg_IY2Int.(grp)(:, i1)), ...
-                      ste(chg_IU3Int.(grp)(:, i1)), ste(chg_IY3Int.(grp)(:, i1))], ...
-                     'Color', colors.(grp));
+            dat_mean = 1e3 * [mean(chg_IUInt.(grp)(:, i1)), mean(chg_IYInt.(grp)(:, i1)), ...
+                        mean(chg_IU2Int.(grp)(:, i1)), mean(chg_IY2Int.(grp)(:, i1)), ...
+                        mean(chg_IU3Int.(grp)(:, i1)), mean(chg_IY3Int.(grp)(:, i1))];
+            dat_sem = 1e3 * [ste(chg_IUInt.(grp)(:, i1)), ste(chg_IYInt.(grp)(:, i1)), ...
+                       ste(chg_IU2Int.(grp)(:, i1)), ste(chg_IY2Int.(grp)(:, i1)), ...
+                       ste(chg_IU3Int.(grp)(:, i1)), ste(chg_IY3Int.(grp)(:, i1))];
+                   
+            y_label = 'Time-interval change from noPert';
+        else
+            dat_mean = 1e3 * [mean(chg_IUInt.(grp)(:, 2) - chg_IUInt.(grp)(:, 1)), mean(chg_IYInt.(grp)(:, 2) - chg_IYInt.(grp)(:, 1)), ...
+                        mean(chg_IU2Int.(grp)(:, 2) - chg_IU2Int.(grp)(:, 1)), mean(chg_IY2Int.(grp)(:, 2) - chg_IY2Int.(grp)(:, 1)), ...
+                        mean(chg_IU3Int.(grp)(:, 2) - chg_IU3Int.(grp)(:, 1)), mean(chg_IY3Int.(grp)(:, 2) - chg_IY3Int.(grp)(:, 1))];
+            dat_sem = 1e3 * [ste(chg_IUInt.(grp)(:, 2) - chg_IUInt.(grp)(:, 1)), ste(chg_IYInt.(grp)(:, 2) - chg_IYInt.(grp)(:, 1)), ...
+                       ste(chg_IU2Int.(grp)(:, 2) - chg_IU2Int.(grp)(:, 1)), ste(chg_IY2Int.(grp)(:, 2) - chg_IY2Int.(grp)(:, 1)), ...
+                       ste(chg_IU3Int.(grp)(:, 2) - chg_IU3Int.(grp)(:, 1)), ste(chg_IY3Int.(grp)(:, 2) - chg_IY3Int.(grp)(:, 1))];
+
+            y_label = 'Time-interval difference';
         end
+        
+        errorbar(1 : nInts, dat_mean, dat_sem, ...
+                 'Color', colors.(grp), 'LineWidth', bpLW);
+        
+        % -- Show within-group significance -- %
+        for i3 = 1 : nInts
+            if corrps_wg.(grp)(i3, i1) < bpCorrPThresh
+                mkFaceClr = colors.(grp);
+            else
+                mkFaceClr = [1, 1, 1];
+            end
+            
+            plot(i3, dat_mean(i3), 'o', ...
+                 'MarkerFaceColor', mkFaceClr, 'MarkerEdgeColor', colors.(grp), ...
+                 'LineWidth', bpLW);
+        end
+                 
+    end
+
+    if i1 == 2
+        set(gca, 'YLim', [-2, 14]);
+    end    
+    
+    % -- Show between-group significance -- %
+    ys = get(gca, 'YLim');
+    yAst = ys(2) - 0.05 * range(ys);
+    for i3 = 1 : nInts
+        if corrps_bg.(pert)(i3) < bpCorrPThresh
+            plot(i3, yAst, '*', 'color', colors.grpContr, 'MarkerSize', bpBGMkSize);
+            
+            plot(i3 + [-0.1, 0.1], repmat(yAst - 0.03 * range(ys), 1, 2), '-', 'Color', colors.grpContr);
+            plot(i3 + [-0.1, -0.1], yAst - [0.03, 0.06] * range(ys), '-', 'Color', colors.grpContr);
+            plot(i3 + [0.1, 0.1], yAst - [0.03, 0.06] * range(ys), '-', 'Color', colors.grpContr);
+        end
+        
+        
+    end
+    
+    
+
+    set(gca, 'XLim', bpXLim);
+    hyl1 = ylabel(y_label, 'FontSize', bpFontSize - 1);    
+    xs = get(gca, 'XLim'); ys = get(gca, 'YLim');
+    ylpos = get(hyl1, 'Position');
+    set(hyl1, 'Position', ylpos + [-0.04 * range(xs), 0, 0]);
+    
+    hyl2 = text(ylpos(1), ylpos(2), unitFormat, 'FontSize', bpFontSize);
+    set(hyl2, 'rotation', 90);
+    set(hyl2, 'Position', get(hyl2, 'Position') + [-0.005 * range(xs), -0.25 * range(ys), 0]);
+    set(gca, 'XTick', 1 : nInts, 'XTickLabel', {});
+    
+    
+    tNameHs = nan(1, nInts);
+    for i3 = 1 : nInts
+        tNameHs(i3) = text(i3 - 0.2, ys(1) - 0.06 * range(ys), tIntNames{i3}, ...
+             'FontSize', bpFontSize);
+    end
+    
+    hxl = xlabel('Time interval');
+    set(hxl, 'Position', get(hxl, 'Position') + [0, -range(ys) * 0.05, 0]);
+
+    box on;
+    
+    % -- Draw legend -- %
+    % - Legend options - %
+    lgdX = 0.35;
+    lgdW = 0.625;
+    lgdY = 0.10;
+    lgdH = 0.35;
+    wgClr = [0.3, 0.3, 0.3];
+    % - ~Legend options - %
+    
+    
+    
+    if i1 == 1
+        xs = get(gca, 'XLim'); ys = get(gca, 'YLim');
+        rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(xs), lgdW * range(xs), lgdH * range(ys)], 'FaceColor', 'w');
+        
+        text(xs(1) + (lgdX + 0.05 * lgdW) * range(xs), ys(1) + (lgdY + 0.75 * lgdH) * range(ys), ...
+             'Within-group', 'FontSize', bpFontSize * 1.0, 'FontAngle', 'italic', 'Color', wgClr);
+        
+        text(xs(1) + (lgdX + 0.05 * lgdW) * range(xs), ys(1) + (lgdY + 0.55 * lgdH) * range(ys), ...
+             'n.s.', 'FontSize', bpFontSize * 0.8, 'Color', wgClr);
+        
+        text(xs(1) + (lgdX + 0.70 * lgdW) * range(xs), ys(1) + (lgdY + 0.725 * lgdH) * range(ys), ...
+             'PFS', 'FontSize', bpFontSize * 0.75, 'FontAngle', 'italic', 'Color', colors.PFS);
+        text(xs(1) + (lgdX + 0.85 * lgdW) * range(xs), ys(1) + (lgdY + 0.725 * lgdH) * range(ys), ...
+             'PWS', 'FontSize', bpFontSize * 0.75, 'FontAngle', 'italic', 'Color', colors.PWS);
+
+        plot(xs(1) + (lgdX + [0.70, 0.80] * lgdW) * range(xs), ...
+             repmat(ys(1) + (lgdY + 0.55 * lgdH) * range(ys), 1, 2), ...
+             '-', 'Color', colors.PFS);
+        plot(xs(1) + (lgdX + [0.85, 0.95] * lgdW) * range(xs), ...
+             repmat(ys(1) + (lgdY + 0.55 * lgdH) * range(ys), 1, 2), ...
+             '-', 'Color', colors.PWS);
+        plot(xs(1) + (lgdX + 0.75 * lgdW) * range(xs), ys(1) + (lgdY + 0.55 * lgdH) * range(ys), 'o', ...
+             'MarkerEdgeColor', colors.PFS, 'MarkerFaceColor', [1, 1, 1]);
+         
+        
+        plot(xs(1) + (lgdX + [0.70, 0.80] * lgdW) * range(xs), ...
+             repmat(ys(1) + (lgdY + 0.40 * lgdH) * range(ys), 1, 2), ...
+             '-', 'Color', colors.PFS);
+        plot(xs(1) + (lgdX + [0.85, 0.95] * lgdW) * range(xs), ...
+             repmat(ys(1) + (lgdY + 0.40 * lgdH) * range(ys), 1, 2), ...
+             '-', 'Color', colors.PWS);
+        plot(xs(1) + (lgdX + 0.90 * lgdW) * range(xs), ys(1) + (lgdY + 0.55 * lgdH) * range(ys), 'o', ...
+             'MarkerEdgeColor', colors.PWS, 'MarkerFaceColor', [1, 1, 1]);
+         
+        text(xs(1) + (lgdX + 0.05 * lgdW) * range(xs), ys(1) + (lgdY + 0.40 * lgdH) * range(ys), ...
+             'p<0.05 (corrected)', 'FontSize', bpFontSize * 0.8, 'Color', wgClr);
+        plot(xs(1) + (lgdX + 0.75 * lgdW) * range(xs), ys(1) + (lgdY + 0.40 * lgdH) * range(ys), 'o', ...
+             'MarkerEdgeColor', colors.PFS, 'MarkerFaceColor', colors.PFS);
+        plot(xs(1) + (lgdX + 0.90 * lgdW) * range(xs), ys(1) + (lgdY + 0.40 * lgdH) * range(ys), 'o', ...
+             'MarkerEdgeColor', colors.PWS, 'MarkerFaceColor', colors.PWS);
+         
+        text(xs(1) + (lgdX + 0.05 * lgdW) * range(xs), ys(1) + (lgdY + 0.175 * lgdH) * range(ys), ...
+             'Between-group', 'FontSize', bpFontSize * 1.0, 'FontAngle', 'italic', 'Color', colors.grpContr);
+         
+        text(xs(1) + (lgdX + 0.05 * lgdW) * range(xs), ys(1) + (lgdY + 0.005 * lgdH) * range(ys), ...
+             'p<0.05 (corrected)', 'FontSize', bpFontSize * 0.8, 'Color', colors.grpContr);
+        plot(xs(1) + (lgdX + 0.75 * lgdW) * range(xs), ys(1) + (lgdY + 0.005 * lgdH) * range(ys), ...
+             '*', 'color', colors.grpContr, 'MarkerSize', bpBGMkSize);
     end
 end
 
