@@ -213,7 +213,8 @@ XLim = [0, 1500];
 figure('color', 'w');
 for i1 = 1 : 2    
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor);
+    metaTracePlot_(ds.avgPertShiftF2_FTN_PFS, ds.avgPertShiftF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor, ...
+                   '-', '-', 1, 1);
 end
 
 permBeg = 250;
@@ -225,6 +226,12 @@ permEnd = 499;
         '--permfile', ['perm_files/', [mfilename, '_FTN_%s_%s_%d.mat']]);
 
 % --- Visualization configurations --- %
+lineType_PFS = '-';
+lineType_PWS = '--';
+
+lineWidth_PFS = 2;
+lineWidth_PWS = 1.5;
+
 ylims.up = [-40, 20];
 ylims.down = [-20, 40];
 ylims.contrast = [-35, 50];
@@ -269,14 +276,16 @@ for i1 = 1 : 3
     set(gca, 'FontSize', 20);
     
     if i1 == 1 || i1 == 2
-        metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor);
+        metaTracePlot_(ds.avgChgTrajF2_FTN_PFS, ds.avgChgTrajF2_FTN_PWS, fld, XLim, 1, colors, shadeWhitenFactor, ...
+                       lineType_PFS, lineType_PWS, lineWidth_PFS, lineWidth_PWS);
     else
         ds.avgChgTrajF2_FTN_contrast_PFS_aux = struct;
         ds.avgChgTrajF2_FTN_contrast_PFS_aux.contrast = ds.avgChgTrajF2_FTN_contrast_PFS;
         ds.avgChgTrajF2_FTN_contrast_PWS_aux = struct;
         ds.avgChgTrajF2_FTN_contrast_PWS_aux.contrast = ds.avgChgTrajF2_FTN_contrast_PWS;
         
-        metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS_aux, ds.avgChgTrajF2_FTN_contrast_PWS_aux, fld, XLim, 1, colors, shadeWhitenFactor);
+        metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS_aux, ds.avgChgTrajF2_FTN_contrast_PWS_aux, fld, XLim, 1, colors, shadeWhitenFactor, ...
+                       lineType_PFS, lineType_PWS, lineWidth_PFS, lineWidth_PWS);
     end
     
     
@@ -385,16 +394,19 @@ for i1 = 1 : 3
         trcT = linspace(xs(1) + trcLgdX0 * range(xs), xs(1) + trcLgdX1 * range(xs), trcLgdN);
         trcV = repmat(ys(1) + trcLgdY.PFS * range(ys), 1, trcLgdN);
         trcE = repmat(trcLgdH * range(ys), 1, trcLgdN);
-        plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PFS); hold on;
+        plot(trcT, trcV, lineType_PFS, 'LineWidth', lineWidth_PFS, 'Color', colors.PFS); hold on;
         plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PFS, 'patch');
         text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PFS * range(ys), 'PFS', 'Color', colors.PFS, 'FontSize', pltFontSize * 0.9);
         
         trcV = repmat(ys(1) + trcLgdY.PWS * range(ys), 1, trcLgdN);
-        plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PWS); hold on;
+        plot(trcT, trcV, lineType_PWS, 'LineWidth', lineWidth_PWS, 'Color', colors.PWS); hold on;
         plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PWS, 'patch');
         text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PWS * range(ys), 'PWS', 'Color', colors.PWS, 'FontSize', pltFontSize * 0.9);
         
         % - Significance symbol legend - %
+        text(xs(1) + (lgdX + 0.10 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.5) * range(ys), 'Significance markers', ...
+             'FontSize', pltFontSize * 0.8);
+        
         rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
                   'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
         rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
@@ -421,6 +433,8 @@ for i1 = 1 : 3
                   'FaceColor', colors.PFS, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
         text(xs(1) + (lgdX + lgdW / 3 * 2 + 0.04 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'Corrected', ...
             'FontSize', pltFontSize * 0.8);
+        
+        
         
     end
 end
@@ -525,7 +539,8 @@ figure('color', 'w');
 XLim = [0, 500];
 for i1 = 1 : 2
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
-    metaTracePlot_(ds.avgPertShiftF2_IOA_PFS, ds.avgPertShiftF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
+    metaTracePlot_(ds.avgPertShiftF2_IOA_PFS, ds.avgPertShiftF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor, ...
+                   '-', '-', 1, 1);
 end
 
 IOA_N = round(IOA_WIN / FRAME_DUR);
@@ -534,7 +549,8 @@ for i1 = 1 : 2
     if i1 == 1; fld = 'up'; else; fld = 'down'; end
     subplot('Position', [0.1 + 0.45 * (i1 - 1), 0.15, 0.4, 0.8]);
     set(gca, 'FontSize', fontSize);
-    metaTracePlot_(ds.avgChgTrajF2_IOA_PFS, ds.avgChgTrajF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
+    metaTracePlot_(ds.avgChgTrajF2_IOA_PFS, ds.avgChgTrajF2_IOA_PWS, fld, XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor, ...
+                   '-', '-', 1, 1);
     set(gca, 'YLim', [-60, 60]);
     
     [p_IOA.down, p_IOA.up, FDR_thresh.down, FDR_thresh.up] = ...
@@ -566,7 +582,8 @@ ds.chgTrajF2_IOA_PWS.down = ds.chgTrajF2_IOA_PWS.contrast;
 
 figure('Position', [50, 100, 400, 400], 'color', 'w');
 set(gca, 'FontSize', fontSize);
-metaTracePlot_(ds.avgChgTrajF2_IOA_contrast_PFS, ds.avgChgTrajF2_IOA_contrast_PWS, [], XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor);
+metaTracePlot_(ds.avgChgTrajF2_IOA_contrast_PFS, ds.avgChgTrajF2_IOA_contrast_PWS, [], XLim, FRAME_DUR * 1e3, colors, shadeWhitenFactor, ...
+               '-', '-', 1, 1);
 draw_xy_axes;
 xlabel('Time from [i] (ms)');
 ylabel('Down-Up F2 response contrast (Hz)');
@@ -581,7 +598,8 @@ figure('Color', 'white', 'Position', [100, 100, 1600, 700], ...
            'Name', ['FTN F2 change trajectorys: ', fld]);
 subplot('Position', [0.1, 0.35, 0.8, 0.55]);
 set(gca, 'FontSize', 30);
-metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS, ds.avgChgTrajF2_FTN_contrast_PWS, [], XLim, 1, colors, shadeWhitenFactor);
+metaTracePlot_(ds.avgChgTrajF2_FTN_contrast_PFS, ds.avgChgTrajF2_FTN_contrast_PWS, [], XLim, 1, colors, shadeWhitenFactor, ...
+               '-', '-', 1, 1);
 
 ylabel('Down-Up F2 contrast (Hz)');
 set(gca, 'YLim', [-25, 55]);
@@ -706,27 +724,18 @@ metaPlot_2grp(u2F2_downUp, 'PFS', 'PWS', 'u2F2: down - up', ...
 return
 
 %%
-function metaTracePlot_(traj_PFS, traj_PWS, fld, XLim, FRAME_DUR, colors, whitenFactor)
+function metaTracePlot_(traj_PFS, traj_PWS, fld, XLim, FRAME_DUR, colors, whitenFactor, ...
+                        lineType_PFS, lineType_PWS, ...
+                        lineWidth_PFS, lineWidth_PWS)
 if ~isempty(fld)
     plot(XLim, [0, 0], '-', 'Color', [0.5, 0.5, 0.5]); hold on;
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PFS.(fld), 1) - 1);
-    plot(tAxis, traj_PFS.(fld)(:, 1), 'LineWidth', 1, 'Color', colors.PFS); hold on;
+    plot(tAxis, traj_PFS.(fld)(:, 1), lineType_PFS, 'LineWidth', lineWidth_PFS, 'Color', colors.PFS); hold on;
     plot_sd_t(tAxis, traj_PFS.(fld)(:, 1), traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PFS, 'patch');
 
-    % plot(tAxis, traj_PFS.(fld)(:, 1) - traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), ...
-    %     'LineWidth', 0.5, 'Color', colors.(fld));
-    % plot(tAxis, traj_PFS.(fld)(:, 1) + traj_PFS.(fld)(:, 2) ./ sqrt(traj_PFS.(fld)(:, 3)), ...
-    %     'LineWidth', 0.5, 'Color', colors.(fld));
-
     tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PWS.(fld), 1) - 1);
-    plot(tAxis, traj_PWS.(fld)(:, 1), '-', 'LineWidth', 1, 'Color', colors.PWS); hold on;
+    plot(tAxis, traj_PWS.(fld)(:, 1), lineType_PWS, 'LineWidth', lineWidth_PWS, 'Color', colors.PWS); hold on;
     plot_sd_t(tAxis, traj_PWS.(fld)(:, 1), traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), whitenFactor + (1 - whitenFactor) * colors.PWS, 'patch');
-
-    % plot(tAxis, traj_PWS.(fld)(:, 1) - traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), ...
-    %     '--', 'LineWidth', 0.5, 'Color', colors.(fld));
-    % plot(tAxis, traj_PWS.(fld)(:, 1) + traj_PWS.(fld)(:, 2) ./ sqrt(traj_PWS.(fld)(:, 3)), ...
-    %     '--', 'LineWidth', 0.5, 'Color', colors.(fld));
-    % tAxis = 0 : FRAME_DUR : FRAME_DUR * (size(traj_PWS.down, 1) - 1);
 
     set(gca, 'XLim', XLim);
 else
