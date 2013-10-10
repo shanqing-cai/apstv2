@@ -263,14 +263,14 @@ for i1 = 1 : 5
     
     if i1>1 && k1==1   
         legend_left=timeLim(1)+0.01;
-        legend_bottom=2.02;
-        legend_width=0.15;
-        legend_height=0.45;
+        legend_bottom=2.00;
+        legend_width=0.175;
+        legend_height=0.50;
         rectangle('Position',[legend_left,legend_bottom,legend_width,legend_height],'EdgeColor','k','FaceColor',[0.25,0.25,0.25])
         plot([legend_left+0.01,legend_left+0.05],[2.34,2.34],'--','LineWidth',traceWidth,'Color',traceColor);
         plot([legend_left+0.01,legend_left+0.05],[2.12,2.12],'--','LineWidth',traceWidth,'Color',traceColor_pert);
-        text(legend_left+0.055,2.35,'Mic. input','Color',traceColor,'FontSize',(fontSize-6)*scaling);
-        text(legend_left+0.055,2.14,'Perturbed AF','Color',traceColor_pert,'FontSize',(fontSize-6)*scaling);
+        text(legend_left+0.055,2.35,'Mic. input','Color',traceColor,'FontSize',(fontSize-5)*scaling);
+        text(legend_left+0.055,2.14,'Perturbed AF','Color',traceColor_pert,'FontSize',(fontSize-4.5)*scaling);
     end
     
 

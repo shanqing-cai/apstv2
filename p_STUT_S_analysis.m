@@ -330,7 +330,7 @@ for i1 = 1 : 3
             
             text(xs(1) - (0.03 + 0.055 * (k1 == 3)) * range(xs), rect_y + 0.02 * range(ys), ...
                  lbl_txt, ...
-                 'Color', f_clr, 'FontSize', pltFontSize * 0.55, 'FontWeight', 'Bold');
+                 'Color', f_clr, 'FontSize', pltFontSize * 0.70, 'FontWeight', 'normal');
         end
         
         
@@ -387,12 +387,12 @@ for i1 = 1 : 3
         trcE = repmat(trcLgdH * range(ys), 1, trcLgdN);
         plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PFS); hold on;
         plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PFS, 'patch');
-        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PFS * range(ys), 'PFS', 'Color', colors.PFS, 'FontSize', pltFontSize * 0.75);
+        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PFS * range(ys), 'PFS', 'Color', colors.PFS, 'FontSize', pltFontSize * 0.9);
         
         trcV = repmat(ys(1) + trcLgdY.PWS * range(ys), 1, trcLgdN);
         plot(trcT, trcV, 'LineWidth', 1, 'Color', colors.PWS); hold on;
         plot_sd_t(trcT, trcV, trcE, shadeWhitenFactor + (1 - shadeWhitenFactor) * colors.PWS, 'patch');
-        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PWS * range(ys), 'PWS', 'Color', colors.PWS, 'FontSize', pltFontSize * 0.75);
+        text(xs(1) + trcLgdX1 * range(xs), ys(1) + trcLgdY.PWS * range(ys), 'PWS', 'Color', colors.PWS, 'FontSize', pltFontSize * 0.9);
         
         % - Significance symbol legend - %
         rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
@@ -402,7 +402,7 @@ for i1 = 1 : 3
         rectangle('Position', [xs(1) + lgdX * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
                   'FaceColor', 'none', 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
         text(xs(1) + (lgdX + 0.08 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'n.s.', ...
-             'FontSize', pltFontSize * 0.65);
+             'FontSize', pltFontSize * 0.8);
          
         rectangle('Position', [xs(1) + (lgdX + lgdW / 3) * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
                   'FaceColor', 1 - 0.5 * (1 - colors.grpContr), 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
@@ -411,7 +411,7 @@ for i1 = 1 : 3
         rectangle('Position', [xs(1) + (lgdX + lgdW / 3) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
                   'FaceColor', 1 - 0.5 * (1 - colors.PFS), 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
         text(xs(1) + (lgdX + lgdW / 3 + 0.06 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'Uncorr.', ...
-             'FontSize', pltFontSize * 0.65);
+             'FontSize', pltFontSize * 0.8);
          
         rectangle('Position', [xs(1) + (lgdX + lgdW / 3 * 2) * range(xs), ys(1) + lgdY * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...                  
                   'FaceColor', colors.grpContr, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
@@ -420,7 +420,7 @@ for i1 = 1 : 3
         rectangle('Position', [xs(1) + (lgdX + lgdW / 3 * 2) * range(xs), ys(1) + lgdY * range(ys) + lgdH / 3 * 2 * range(ys), lgdW / 3 * range(xs), lgdH / 3 * range(ys)], ...
                   'FaceColor', colors.PFS, 'EdgeColor', barEdgeClr, 'LineWidth', barLineW);
         text(xs(1) + (lgdX + lgdW / 3 * 2 + 0.04 * lgdW) * range(xs), ys(1) + (lgdY + lgdH * 1.2) * range(ys), 'Corrected', ...
-            'FontSize', pltFontSize * 0.65);
+            'FontSize', pltFontSize * 0.8);
         
     end
 end
