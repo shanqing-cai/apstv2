@@ -8,10 +8,14 @@ fontSize=15;
 namStyle='accelDecel';
 % traceColor=[139/256,69/256,19/256];
 traceColor=[1,1,1];
+% traceColor=[0.5, 0.5, 0.5];
 % traceColor=[0,0,0];
 % traceColor_pert='c';
+traceType_noPert = '-';
+traceType_pert = '-';
 traceColor_pert='m';
-traceWidth=3;
+traceWidth=1.5;
+traceWidth_pert = 3;
 axesColor='k';
 pointerColor='k';
 pointerWidth=3;
@@ -166,7 +170,7 @@ for i1 = 1 : 5
             f2v_noPert=f2v;
         end
 
-        lineStyle='--';
+        lineStyle = traceType_noPert;
         plot(taxis1,f1v,lineStyle,'LineWidth',traceWidth,'Color',traceColor);
         hold on;
         plot(taxis1,f2v,lineStyle,'LineWidth',traceWidth,'Color',traceColor);
@@ -184,8 +188,10 @@ for i1 = 1 : 5
                 f2s_up=f2s;
             end
 
-            plot(taxis1(f2s>0),f2s(f2s>0),'--','LineWidth',traceWidth,'Color',traceColor_pert);
-            plot(taxis1(f1s>0),f1s(f1s>0),'--','LineWidth',traceWidth,'Color',traceColor_pert);        
+            plot(taxis1(f2s>0),f2s(f2s>0), traceType_pert, ...
+                 'LineWidth', traceWidth_pert, 'Color', traceColor_pert);
+            plot(taxis1(f1s>0),f1s(f1s>0), traceType_pert, ...
+                 'LineWidth', traceWidth_pert, 'Color', traceColor_pert);        
         end
 
         set(gca,'YLim',[0,2.5]);
@@ -201,10 +207,10 @@ for i1 = 1 : 5
 
         
         if i1==1 && k1==1
-            plot([0.6,0.7],[0.15,0.15],'-','LineWidth',traceWidth,'Color',timeBarColor);
+            plot([0.6,0.7],[0.15,0.15],'-','LineWidth',traceWidth * 2,'Color',timeBarColor);
             text(0.6,0.28,'100 ms','FontSize',(fontSize-3)*scaling*1.2,'FontWeight','Bold','Color',timeBarColor);
         else
-            plot([0.75,0.85],[0.15,0.15],'-','LineWidth',traceWidth,'Color',timeBarColor);
+            plot([0.75,0.85],[0.15,0.15],'-','LineWidth',traceWidth * 2,'Color',timeBarColor);
             text(0.765,0.28,'100 ms','FontSize',(fontSize-3)*scaling*1.2,'FontWeight','Bold','Color',timeBarColor);
         end
         ys=get(gca,'YLim');
@@ -267,8 +273,9 @@ for i1 = 1 : 5
         legend_width=0.175;
         legend_height=0.50;
         rectangle('Position',[legend_left,legend_bottom,legend_width,legend_height],'EdgeColor','k','FaceColor',[0.25,0.25,0.25])
-        plot([legend_left+0.01,legend_left+0.05],[2.34,2.34],'--','LineWidth',traceWidth,'Color',traceColor);
-        plot([legend_left+0.01,legend_left+0.05],[2.12,2.12],'--','LineWidth',traceWidth,'Color',traceColor_pert);
+        plot([legend_left+0.01,legend_left+0.05],[2.34,2.34],traceType_noPert,'LineWidth',traceWidth,'Color',traceColor);
+        plot([legend_left + 0.01, legend_left + 0.05], [2.12, 2.12], ...
+             traceType_pert, 'LineWidth', traceWidth_pert, 'Color', traceColor_pert);
         text(legend_left+0.055,2.35,'Mic. input','Color',traceColor,'FontSize',(fontSize-5)*scaling);
         text(legend_left+0.055,2.14,'Perturbed AF','Color',traceColor_pert,'FontSize',(fontSize-4.5)*scaling);
     end
