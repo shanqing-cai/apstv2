@@ -15,6 +15,11 @@ if ~isempty(fsic(varargin,'save')) || ~isempty(fsic(varargin, 'saveOnly'))
     bSave=1;
 end
 
+bInterpCompare = 0;
+if ~isempty(fsic(varargin, 'interpCompare'))
+    bInterpCompare = 1;
+end
+
 colors.noPert='k';
 colors.up=[1,0,0];
 colors.down=[0,0.4,1];
@@ -231,14 +236,52 @@ f2Trajs_pert=protoStruct_cell;
 f1Trajs_pert=protoStruct_cell;
 f2_pertShift=protoStruct_cell;
 f1_pertShift=protoStruct_cell;
-segTrajF2_tNorm1=protoStruct_cell;   % The time normalized F2 trajectories between iouOnset and youOnset. Anchorage between iouOnset and youOnset
-segTrajF2_tNorm2=protoStruct_cell;   % The time normalized F2 trajectories between iouOnset and youOnset. Anchorage between uTime and youOnset
-segTrajF2_tNorm2_pert=protoStruct_cell;
+
 
 rmsTrajs=protoStruct_cell;
 
-segTrajF2_tNorm2_nn=protoStruct_cell;
-segTrajF2_tNorm2_cs=protoStruct_cell;
+% --- New initialization --- %
+fmtFields = {'F1', 'F2'};
+segTraj = struct; % Linear inerpolation (default)
+if bInterpCompare
+    segTraj_nn = struct; % Nearest neighbor interpolation
+    segTraj_cs = struct; % Cubic spline interpolation
+end
+
+N_segs = 6;
+% 1 - tNorm1a: between [i] and [u]_1
+% 2 - tNorm2: between [u]_1 and [j]_1
+% 3 - tNorm3: between [j]_1 and [u]_2
+% 4 - tNorm4: between [u]_2 and [j]_2
+% 5 - tNorm5: between [j]_2 and [u]_3
+% 6 - tNorm6: between [u]_3 and [j]_3
+
+for i1 = 1 : numel(fmtFields)
+    ff = fmtFields{i1};
+    
+    segTraj.(ff) = cell(1, N_segs);
+    if bInterpCompare
+        segTraj_nn.(ff) = cell(1, N_segs);
+        segTraj_cs.(ff) = cell(1, N_segs);
+    end
+
+    for i2 = 1 : N_segs
+        segTraj.(ff){i2} = protoStruct_cell;
+        
+        if bInterpCompare
+            segTraj_nn.(ff){i2} = protoStruct_cell;
+            segTraj_cs.(ff){i2} = protoStruct_cell;
+        end
+    end
+end 
+
+% --- Old initializations --- %
+segTrajF2_tNorm1=protoStruct_cell;   % The time normalized F2 trajectories between iouOnset and youOnset. Anchorage between iouOnset and youOnset
+% segTrajF2_tNorm2=protoStruct_cell;   % The time normalized F2 trajectories between iouOnset and youOnset. Anchorage between uTime and youOnset
+segTrajF2_tNorm2_pert=protoStruct_cell;
+
+% segTrajF2_tNorm2_nn=protoStruct_cell;
+% segTrajF2_tNorm2_cs=protoStruct_cell;
 
 segTrajF2_tNorm1a=protoStruct_cell;
 segTrajF2_tNorm1a_pert=protoStruct_cell;
@@ -248,20 +291,22 @@ segTrajF2_tNorm1a_cs = protoStruct_cell;    % Cubic spline
 
 segVelF2_tNorm1=protoStruct_cell;
 
-segTrajF2_tNorm3=protoStruct_cell;	% Time normalized F2 trajectories between youOnset and uayOnset
-segTrajF2_tNorm4=protoStruct_cell;	% Time normalized F2 trajectories between uayOnset and yo1Onset
-segTrajF2_tNorm5=protoStruct_cell;  % Time normalized F2 trajectories between yo1Onset and u2Time
-segTrajF2_tNorm6=protoStruct_cell;  % Time normalized F2 trajectories between u2Time and yo2Onset
+% segTrajF2_tNorm3=protoStruct_cell;	% Time normalized F2 trajectories between youOnset and uayOnset
+% segTrajF2_tNorm4=protoStruct_cell;	% Time normalized F2 trajectories between uayOnset and yo1Onset
+% segTrajF2_tNorm5=protoStruct_cell;  % Time normalized F2 trajectories between yo1Onset and u2Time
+% segTrajF2_tNorm6=protoStruct_cell;  % Time normalized F2 trajectories between u2Time and yo2Onset
 
-segTrajF2_tNorm3_nn=protoStruct_cell;
-segTrajF2_tNorm4_nn=protoStruct_cell;
-segTrajF2_tNorm5_nn=protoStruct_cell;
-segTrajF2_tNorm6_nn=protoStruct_cell;
+% segTrajF2_tNorm3_nn=protoStruct_cell;
+% segTrajF2_tNorm4_nn=protoStruct_cell;
+% segTrajF2_tNorm5_nn=protoStruct_cell;
+% segTrajF2_tNorm6_nn=protoStruct_cell;
 
-segTrajF2_tNorm3_cs=protoStruct_cell;
-segTrajF2_tNorm4_cs=protoStruct_cell;
-segTrajF2_tNorm5_cs=protoStruct_cell;
-segTrajF2_tNorm6_cs=protoStruct_cell;
+% segTrajF2_tNorm3_cs=protoStruct_cell;
+% segTrajF2_tNorm4_cs=protoStruct_cell;
+% segTrajF2_tNorm5_cs=protoStruct_cell;
+% segTrajF2_tNorm6_cs=protoStruct_cell;
+
+% --- ~Old initializations --- %
 
 segTrajF2_tNorm3_pert=protoStruct_cell;	% Time normalized F2 trajectories between youOnset and uayOnset
 segTrajF2_tNorm4_pert=protoStruct_cell;	% Time normalized F2 trajectories between uayOnset and yo1Onset
@@ -520,27 +565,78 @@ for i1=1:numel(pertTypes)
             end
         end
         
-        taxis1=0:frameDur:frameDur*(length(this_utter.traj_F2)-1);
-        % Time-normalized F2 trajectory: anchorage 1: between [i] and [j]_1 (not used in generating
+        taxis1 = 0 : frameDur : frameDur * (length(this_utter.traj_F2) - 1);
+        
+        % Time-normalized F1 and F2 trajectory: anchorage 1: between [i] and [j]_1 (not used in generating
         % the complete time-normalized trajectory
-        t_segTrajF2=this_utter.traj_F2(taxis1<=this_utter.youOnset-this_utter.iouOnset);
-        t_segTrajF2=interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-        segTrajF2_tNorm1.(fld0){end+1}=t_segTrajF2;        
+        t_segTrajF2 = this_utter.traj_F2(taxis1 <= this_utter.youOnset - this_utter.iouOnset);
+        t_segTrajF2 = interp1(1 : length(t_segTrajF2), t_segTrajF2, linspace(1, length(t_segTrajF2), nInterp));
+        segTrajF2_tNorm1.(fld0){end + 1}=t_segTrajF2;
+        
+        assert(isequal(size(this_utter.traj_F1), size(this_utter.traj_F2)));
+        for i3 = 1 : 6
+            if i3 == 1  % tNorm1a: between [i] and [u]_1
+                t_beg = this_utter.iouOnset; 
+                t_end = this_utter.uTime;
+            elseif i3 == 2 % tNorm2: between [u]_1 and [j]_1
+                t_beg = this_utter.uTime; 
+                t_end = this_utter.youOnset;
+            elseif i3 == 3 % tNorm3: between [j]_1 and [u]_2
+                t_beg = this_utter.youOnset;
+                t_end = this_utter.uayOnset;
+            elseif i3 == 4 % tNorm4: between [u]_2 and [j]_2
+                t_beg = this_utter.uayOnset;
+                t_end = this_utter.yo1Onset;
+            elseif i3 == 5 % tNorm5: between [j]_2 and [u]_3
+                t_beg = this_utter.yo1Onset;
+                t_end = this_utter.yo1End;
+            elseif i3 == 6 % tNorm6: between [u]_3 and [j]_3
+                t_beg = this_utter.yo1End;
+                t_end = this_utter.yo2Onset;
+            end
+            assert(t_end > t_beg);
+                        
+            for i4 = 1 : numel(fmtFields)
+                ff = fmtFields{i4};
+                tff = sprintf('traj_%s', ff);
+            
+                t_segTraj = this_utter.(tff)(taxis1 >= t_beg - this_utter.iouOnset & ...
+                                               taxis1 <= t_end - this_utter.iouOnset);
+                if ~isempty(t_segTraj)
+                    segTraj.(ff){i3}.(fld0){end + 1} = ...
+                        interp1(1 : length(t_segTraj), t_segTraj, linspace(1,length(t_segTraj), nInterp));
+                    
+                    if bInterpCompare
+                        segTraj_nn.(ff){i3}.(fld0){end + 1} = ...
+                            interp1(1 : length(t_segTraj), t_segTraj, linspace(1,length(t_segTraj), nInterp), 'nearest');
+                        segTraj_cs.(ff){i3}.(fld0){end + 1} = ...
+                            interp1(1 : length(t_segTraj), t_segTraj, linspace(1,length(t_segTraj), nInterp), 'spline');
+                    end
+                else
+                    segTraj.(ff){i3}.(fld0){end + 1} = nan(1, nInterp);
+                    
+                    if bInterpCompare
+                        segTraj_nn.(ff){i3}.(fld0){end + 1} = nan(1, nInterp);
+                        segTraj_cs.(ff){i3}.(fld0){end + 1} = nan(1, nInterp);
+                    end
+                end
+            end
+        end
         
         % Anchorage 1a: between [i] and [u]_1 (used in genereating complete time-normalized trajectory)
-        t_segTrajF2=this_utter.traj_F2(taxis1<=this_utter.uTime-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)
-            segTrajF2_tNorm1a.(fld0){end+1}= ... % t_segTrajF2;
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));            
-            segTrajF2_tNorm1a_nn.(fld0){end+1}= ... % t_segTrajF2;
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm1a_cs.(fld0){end+1}= ... % t_segTrajF2;
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');            
-        else
-            segTrajF2_tNorm1a.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm1a_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm1a_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         t_segTrajF2=this_utter.traj_F2(taxis1<=this_utter.uTime-this_utter.iouOnset);
+%         if ~isempty(t_segTrajF2)
+%             segTrajF2_tNorm1a.(fld0){end+1}= ... % t_segTrajF2;
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));            
+%             segTrajF2_tNorm1a_nn.(fld0){end+1}= ... % t_segTrajF2;
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm1a_cs.(fld0){end+1}= ... % t_segTrajF2;
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');            
+%         else
+%             segTrajF2_tNorm1a.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm1a_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm1a_cs.(fld0){end+1}=nan(1,nInterp);
+%         end
         if ~isequal(fld0,'noPert')
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(taxis1<=this_utter.uTime-this_utter.iouOnset);
             t_segTrajF2_pert=interp1(1:length(t_segTrajF2_pert),t_segTrajF2_pert,linspace(1,length(t_segTrajF2_pert),nInterp));
@@ -548,19 +644,19 @@ for i1=1:numel(pertTypes)
         end
 
         % Time-normalized F2 trajectory: anchorage 2: between [u]_1 and [j]_1
-        t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.uTime-this_utter.iouOnset & taxis1<=this_utter.youOnset-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)
-            segTrajF2_tNorm2.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-            segTrajF2_tNorm2_nn.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm2_cs.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
-        else
-            segTrajF2_tNorm2.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm2_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm2_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.uTime-this_utter.iouOnset & taxis1<=this_utter.youOnset-this_utter.iouOnset);
+%         if ~isempty(t_segTrajF2)
+%             segTrajF2_tNorm2.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
+%             segTrajF2_tNorm2_nn.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm2_cs.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
+%         else
+%             segTrajF2_tNorm2.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm2_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm2_cs.(fld0){end+1}=nan(1,nInterp);
+%         end
         if ~isequal(fld0,'noPert')
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(taxis1>=this_utter.uTime-this_utter.iouOnset & taxis1<=this_utter.youOnset-this_utter.iouOnset);
             t_segTrajF2_pert=interp1(1:length(t_segTrajF2_pert),t_segTrajF2_pert,linspace(1,length(t_segTrajF2_pert),nInterp));
@@ -568,19 +664,19 @@ for i1=1:numel(pertTypes)
         end
         
         % Time-normalized F1 trajectory: anchorage 3: between [j]_1 and [u]_2
-        t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.youOnset-this_utter.iouOnset & taxis1<=this_utter.uayOnset-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)            
-            segTrajF2_tNorm3.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-            segTrajF2_tNorm3_nn.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm3_cs.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
-        else
-            segTrajF2_tNorm3.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm3_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm3_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.youOnset-this_utter.iouOnset & taxis1<=this_utter.uayOnset-this_utter.iouOnset);
+%         if ~isempty(t_segTrajF2)            
+%             segTrajF2_tNorm3.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
+%             segTrajF2_tNorm3_nn.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm3_cs.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
+%         else
+%             segTrajF2_tNorm3.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm3_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm3_cs.(fld0){end+1}=nan(1,nInterp);
+%         end   
         if ~isequal(fld0,'noPert')
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(taxis1>=this_utter.youOnset-this_utter.iouOnset & taxis1<=this_utter.uayOnset-this_utter.iouOnset);
             t_segTrajF2_pert=interp1(1:length(t_segTrajF2_pert),t_segTrajF2_pert,linspace(1,length(t_segTrajF2_pert),nInterp));
@@ -588,19 +684,19 @@ for i1=1:numel(pertTypes)
         end
         
         % Time normalied F2 trajectory: anchorage 4: between [u]_2 and [j]_2
-        t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.uayOnset-this_utter.iouOnset & taxis1<=this_utter.yo1Onset-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)            
-            segTrajF2_tNorm4.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-            segTrajF2_tNorm4_nn.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm4_cs.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
-        else            
-            segTrajF2_tNorm4.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm4_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm4_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.uayOnset-this_utter.iouOnset & taxis1<=this_utter.yo1Onset-this_utter.iouOnset);
+%         if ~isempty(t_segTrajF2)            
+%             segTrajF2_tNorm4.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
+%             segTrajF2_tNorm4_nn.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm4_cs.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
+%         else            
+%             segTrajF2_tNorm4.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm4_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm4_cs.(fld0){end+1}=nan(1,nInterp);
+%         end
         if ~isequal(fld0,'noPert')
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(taxis1>=this_utter.uayOnset-this_utter.iouOnset & taxis1<=this_utter.yo1Onset-this_utter.iouOnset);
             t_segTrajF2_pert=interp1(1:length(t_segTrajF2_pert),t_segTrajF2_pert,linspace(1,length(t_segTrajF2_pert),nInterp));
@@ -609,18 +705,18 @@ for i1=1:numel(pertTypes)
         
         % Time normalied F2 trajectory: anchorage 5: between [j]_2 and [u]_3
         t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.yo1Onset-this_utter.iouOnset & taxis1<=this_utter.yo1End-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)            
-            segTrajF2_tNorm5.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-            segTrajF2_tNorm5_nn.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm5_cs.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
-        else
-            segTrajF2_tNorm5.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm5_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm5_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         if ~isempty(t_segTrajF2)            
+%             segTrajF2_tNorm5.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
+%             segTrajF2_tNorm5_nn.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm5_cs.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
+%         else
+%             segTrajF2_tNorm5.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm5_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm5_cs.(fld0){end+1}=nan(1,nInterp);
+%         end
         if ~isequal(fld0,'noPert')
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(taxis1>=this_utter.yo1Onset-this_utter.iouOnset & taxis1<=this_utter.yo1End-this_utter.iouOnset);
             t_segTrajF2_pert=interp1(1:length(t_segTrajF2_pert),t_segTrajF2_pert,linspace(1,length(t_segTrajF2_pert),nInterp));
@@ -629,18 +725,18 @@ for i1=1:numel(pertTypes)
         
         % Time normalied F2 trajectory: anchorage 6: between [u]_3 and [j]_3
         t_segTrajF2=this_utter.traj_F2(taxis1>=this_utter.yo1End-this_utter.iouOnset & taxis1<=this_utter.yo2Onset-this_utter.iouOnset);
-        if ~isempty(t_segTrajF2)            
-            segTrajF2_tNorm6.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
-            segTrajF2_tNorm6_nn.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
-            segTrajF2_tNorm6_cs.(fld0){end+1} = ...
-                interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
-        else
-            segTrajF2_tNorm6.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm6_nn.(fld0){end+1}=nan(1,nInterp);
-            segTrajF2_tNorm6_cs.(fld0){end+1}=nan(1,nInterp);
-        end
+%         if ~isempty(t_segTrajF2)            
+%             segTrajF2_tNorm6.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp));
+%             segTrajF2_tNorm6_nn.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'nearest');
+%             segTrajF2_tNorm6_cs.(fld0){end+1} = ...
+%                 interp1(1:length(t_segTrajF2),t_segTrajF2,linspace(1,length(t_segTrajF2),nInterp), 'spline');
+%         else
+%             segTrajF2_tNorm6.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm6_nn.(fld0){end+1}=nan(1,nInterp);
+%             segTrajF2_tNorm6_cs.(fld0){end+1}=nan(1,nInterp);
+%         end
         if ~isequal(fld0,'noPert')
             idx_o=find(taxis1>=this_utter.yo1End-this_utter.iouOnset & taxis1<=this_utter.yo2Onset-this_utter.iouOnset);
             t_segTrajF2_pert=f2Trajs_pert.(fld0){end}(idx_o(1):min([idx_o(end),length(f2Trajs_pert.(fld0){end})]));
@@ -815,6 +911,7 @@ end
 
 %% Calculate normT1 measures (between i and y)
 a=avgTrace1(segTrajF2_tNorm1.noPert);
+a=avgTrace1(segTrajF2_tNorm1.noPert);
 [foo,idx_min]=min(a(:,1));
 normT1_uTime=idx_min;
 flds=fields(segTrajF2_tNorm1);
@@ -840,25 +937,27 @@ for i0=1:length(config.normT1_bw_uy_ratio)
 end
 
 %% Calculate normT2 measures (between u and y)
-flds=fields(segTrajF2_tNorm2);
+% flds=fields(segTrajF2_tNorm2);
+flds=fields(segTraj.F2{2});
 for i0=1:length(config.normT2_bw_uy_ratio)
     for i1=1:length(flds)
         fld=flds{i1};
-        for i2=1:length(segTrajF2_tNorm2.(fld)) 
+        for i2=1:length(segTraj.F2{2}.(fld)) 
             normT2_bw_uy_f2{i0}.(fld)(end+1)=...
-                segTrajF2_tNorm2.(fld){i2}(round(1+config.normT2_bw_uy_ratio(i0)*(length(segTrajF2_tNorm2.(fld){i2})-1)));
+                segTraj.F2{2}.(fld){i2}(round(1+config.normT2_bw_uy_ratio(i0)*(length(segTraj.F2{2}.(fld){i2})-1)));
         end
     end
 end
 
 %% Calculate normT3 measures (between y and u in "you")
-flds=fields(segTrajF2_tNorm3);
+% flds=fields(segTrajF2_tNorm3);
+flds=fields(segTraj.F2{3});
 for i0=1:length(config.normT3_bw_yu_ratio)
     for i1=1:length(flds)
         fld=flds{i1};
-        for i2=1:length(segTrajF2_tNorm3.(fld)) 
+        for i2=1:length(segTraj.F2{3}.(fld)) 
             normT3_bw_yu_f2{i0}.(fld)(end+1)=...
-                segTrajF2_tNorm3.(fld){i2}(round(1+config.normT3_bw_yu_ratio(i0)*(length(segTrajF2_tNorm3.(fld){i2})-1)));
+                segTraj.F2{3}.(fld){i2}(round(1+config.normT3_bw_yu_ratio(i0)*(length(segTraj.F2{3}.(fld){i2})-1)));
         end
     end
 end
@@ -872,13 +971,21 @@ end
 %   4 - [j]_2
 %   5 - [u]_3
 %   6 - [j]_3
+fullTNorm_tAxis=0 : 1 / (nInterp-1) : 6;
+
+fullTNormF1=protoStruct_cell;
 fullTNormF2=protoStruct_cell;
+
+avg_fullTNormF1=protoStruct_cell;
+avg_fullTNormF1_nn=protoStruct_cell;
+avg_fullTNormF1_cs=protoStruct_cell;
+
+fullTNormF1_nn = protoStruct_cell;  % Nearest neighbor
+fullTNormF1_cs = protoStruct_cell;  % Cubic spline
 
 avg_fullTNormF2=protoStruct_cell;
 avg_fullTNormF2_nn=protoStruct_cell;
 avg_fullTNormF2_cs=protoStruct_cell;
-
-fullTNormF2_tAxis=0:1/(nInterp-1):6;
 
 fullTNormF2_nn = protoStruct_cell;  % Nearest neighbor
 fullTNormF2_cs = protoStruct_cell;  % Cubic spline
@@ -894,10 +1001,10 @@ avg_fullTNormF2_AT=protoStruct_array_AT;
 
 for i1=1:numel(flds)
     fld=flds{i1};
-    fullTNormF2.(fld)=nan(0,length(fullTNormF2_tAxis));
-    fullTNormF2_nn.(fld)=nan(0,length(fullTNormF2_tAxis));
-    fullTNormF2_cs.(fld)=nan(0,length(fullTNormF2_tAxis));
-    fullTNormF2_pert.(fld)=nan(0,length(fullTNormF2_tAxis));
+    fullTNormF2.(fld)=nan(0,length(fullTNorm_tAxis));
+    fullTNormF2_nn.(fld)=nan(0,length(fullTNorm_tAxis));
+    fullTNormF2_cs.(fld)=nan(0,length(fullTNorm_tAxis));
+    fullTNormF2_pert.(fld)=nan(0,length(fullTNorm_tAxis));
     for i2=1:numel(segTrajF2_tNorm1a.(fld))
         fullTNormF2.(fld)=[fullTNormF2.(fld); [segTrajF2_tNorm1a.(fld){i2}(1:end), segTrajF2_tNorm2.(fld){i2}(2:end), ...
                                segTrajF2_tNorm3.(fld){i2}(2:end), segTrajF2_tNorm4.(fld){i2}(2:end), ...
@@ -962,7 +1069,7 @@ fullTNormPertShiftF2=protoStruct_cell;
 avg_fullTNormPertShiftF2=protoStruct_cell;
 for i1=1:numel(flds)
     fld=flds{i1};
-    fullTNormPertShift.(fld)=nan(0,length(fullTNormF2_tAxis));
+    fullTNormPertShift.(fld)=nan(0,length(fullTNorm_tAxis));
     for i2=1:numel(segPertShiftF2_tNorm1.(fld))
         fullTNormPertShift.(fld)=[fullTNormPertShift.(fld); [segPertShiftF2_tNorm1.(fld){i2}(1:end), segPertShiftF2_tNorm2.(fld){i2}(2:end), ...
                                segPertShiftF2_tNorm3.(fld){i2}(2:end), segPertShiftF2_tNorm4.(fld){i2}(2:end), ...
@@ -1218,7 +1325,7 @@ if ~isempty(fsic(varargin,'pick'))
         yF2_FTN.(fld)=nan(1,size(fullTNormF2.(fld),1));
 
         for i2=1:size(fullTNormF2.(fld),1)
-            [foo,idx_2]=min(abs(fullTNormF2_tAxis-2));
+            [foo,idx_2]=min(abs(fullTNorm_tAxis-2));
             yF2_FTN.(fld)(i2)=fullTNormF2.(fld)(i2,idx_2);
         end
 
@@ -1660,7 +1767,8 @@ pdata.stage2.avg_f2_pertShift_IOA_TN=avg_f2_pertShift_IOA_TN;
 pdata.stage2.avg_f2_pertShift_IOA_FN=avg_f2_pertShift_IOA_FN;
 pdata.stage2.avg_f2_pertShift_IOA_TN_FN=avg_f2_pertShift_IOA_TN_FN;
 
-pdata.stage2.fullTNormF2_tAxis=fullTNormF2_tAxis;
+pdata.stage2.fullTNormF2_tAxis=fullTNorm_tAxis;  % For backward compatibility
+pdata.stage2.fullTNorm_tAxis=fullTNorm_tAxis;
 pdata.stage2.fullTNormF2=fullTNormF2;
 
 pdata.stage2.avg_fullTNormF2=avg_fullTNormF2;
